@@ -1,33 +1,22 @@
-from tkinter import CASCADE
 from django.db import models
 from django.contrib.auth.models import User
-from utilis import PHONE_REGEX
 
-# cities as constants
-SARAJEVO = 'Sarajevo'
-MOSTAR = 'Mostar'
-TUZLA = 'Tuzla'
-TRAVNIK = 'Travnik'
-BIJELJINA = 'Bijeljina'
-CAPLJINA = 'Capljina'
-CITIES = [
-    (SARAJEVO, 'Sarajevo', 'SA'),
-    (MOSTAR, 'Mostar', 'MO'),
-    (TUZLA, 'Tuzla', 'TZ'),
-    (TRAVNIK, 'Travnik', 'TR'),
-    (BIJELJINA, 'Bijeljina', 'BN'),
-    (CAPLJINA, 'Capljina', 'CP')
-]
+from BBBSApp.utilis import PHONE_REGEX
+
+
+class City(models.Model):
+    name = models.CharField(max_length=15)
+    abbreviation = models.CharField(max_length=2)
 
 
 class Organisation(models.Model):
     name = models.CharField(max_length=50)
+    city = models.ManyToManyField(City)
 
 
 class Coordinator(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)  # has first_name, last_name, username, password, email, group
-    organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
-    city = models.CharField(choices=CITIES)
+    organisation = models.OneToOneField(Organisation, on_delete=models.CASCADE)
 
 
 class Volunteer(models.Model):
@@ -62,16 +51,16 @@ class Volunteer(models.Model):
         (True, u'Aktivan'),
         (False, u'Neaktivan'),
     )
-    
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)  # has first_name, last_name, username, password, email, group
     gender = models.CharField(max_length=1, choices=GENDER)
-    birth_year = models.PositiveIntegerField(max_length=4)
+    birth_year = models.PositiveIntegerField()
     phone_number = models.CharField(validators=[PHONE_REGEX], max_length=9, null=True)
     organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
-    city = models.CharField(choices=CITIES)
-    education_level = models.CharField(choices=EDUCATION_LEVEL)
+    city = models.ForeignKey(City, on_delete=models.DO_NOTHING)
+    education_level = models.CharField(choices=EDUCATION_LEVEL, max_length=4)
     faculty_department = models.TextField(null=True)
-    employment_status = models.CharField(choices=EMPLOYMENT_STATUS)
+    employment_status = models.CharField(choices=EMPLOYMENT_STATUS, max_length=15)
     good_conduct_certificate = models.BooleanField(choices=GOOD_CONDUCT_CERTIFICATE)
     status = models.BooleanField(choices=STATUS)
     coordinator = models.ForeignKey(Coordinator, on_delete=models.DO_NOTHING)  # check what to do on delete
@@ -117,13 +106,13 @@ class Child(models.Model):
     )
 
     code = models.CharField(max_length=8)
-    gender = models.CharField(choices=GENDER)
-    birth_year = models.PositiveIntegerField(max_length=4)
-    organisation = models.ForeignKey(Organisation, on_delete=CASCADE)
-    city = models.CharField(choices=CITIES)
-    school_status = models.CharField(choices=SCHOOL_STATUS)
+    gender = models.CharField(choices=GENDER, max_length=1)
+    birth_year = models.PositiveIntegerField()
+    organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
+    city = models.ForeignKey(City, on_delete=models.DO_NOTHING)
+    school_status = models.CharField(choices=SCHOOL_STATUS, max_length=50)
     developmental_difficulties = models.TextField()  # list coverted to json and stored
-    family_model = models.CharField(choices=FAMILY_MODEL)
+    family_model = models.CharField(choices=FAMILY_MODEL, max_length=50)
     mentoring_reason = models.TextField()  # list coverted to json and stored
     status = models.BooleanField(choices=STATUS)
     guardian_consent = models.BooleanField(choices=GUARDIAN_CONSENT)
@@ -132,7 +121,3 @@ class Child(models.Model):
         on_delete=models.DO_NOTHING,  # check what to do on delete
         primary_key=True,
     )
-
-     
-
-

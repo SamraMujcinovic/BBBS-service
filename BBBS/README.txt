@@ -1,5 +1,6 @@
 connection to database :
 psql -h localhost -p 5432 -U bbbsuser -d bbbs
+pass: password
 
 python manage.py runserver
 
