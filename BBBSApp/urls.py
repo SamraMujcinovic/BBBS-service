@@ -1,7 +1,12 @@
-from django.urls import path
 
-from . import views
+
+from django.conf.urls import url, include
+from BBBSApp import views
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'coordinators', views.CoordinatorView)
 
 urlpatterns = [
-    path('', views.index, name='index'),
+    url(r'^', include(router.urls)),
 ]
