@@ -6,6 +6,7 @@ from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 router.register(r'coordinators', views.CoordinatorView)
+router.register(r'volunteers', views.VolunteerView)
 
 urlpatterns = [
     url(r'^', include(router.urls)),

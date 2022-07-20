@@ -3,8 +3,8 @@ from django.http import HttpResponse
 from rest_framework import viewsets
   
 # import local data
-from .serializers import CoordinatorSerializer
-from .models import Coordinator
+from .serializers import CoordinatorSerializer, VolunteerSerializer
+from .models import Coordinator, Volunteer
 
 
 def index(request):
@@ -18,3 +18,12 @@ class CoordinatorView(viewsets.ModelViewSet):
       
     # specify serializer to be used
     serializer_class = CoordinatorSerializer
+
+
+# create a viewset
+class VolunteerView(viewsets.ModelViewSet):
+    # define queryset
+    queryset = Volunteer.objects.all()
+      
+    # specify serializer to be used
+    serializer_class = VolunteerSerializer
