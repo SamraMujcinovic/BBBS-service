@@ -15,7 +15,18 @@ class Organisation(models.Model):
 
 class Coordinator(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)  # has first_name, last_name, username, password, email, group
-
+    coordinator_organisation = models.ManyToManyField(
+        'Organisation',
+        through='Coordinator_Organisation_City',
+        related_name='coordinator_organisation',
+        blank=True
+    )
+    coordinator_city = models.ManyToManyField(
+        'City',
+        through='Coordinator_Organisation_City',
+        related_name='coordinator_city',
+        blank=True
+    )
 
 class Volunteer(models.Model):
     GENDER = (
@@ -60,6 +71,18 @@ class Volunteer(models.Model):
     good_conduct_certificate = models.BooleanField(choices=GOOD_CONDUCT_CERTIFICATE)
     status = models.BooleanField(choices=STATUS)
     coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.DO_NOTHING)
+    volunteer_organisation = models.ManyToManyField(
+        'Organisation',
+        through='Volunteer_Organisation_City',
+        related_name='volunteer_organisation',
+        blank=True
+    )
+    volunteer_city = models.ManyToManyField(
+        'City',
+        through='Volunteer_Organisation_City',
+        related_name='volunteer_city',
+        blank=True
+    )
 
 
 class Developmental_Difficulties(models.Model):
@@ -128,14 +151,26 @@ class Child(models.Model):
         on_delete=models.DO_NOTHING,  # check what to do on delete
         primary_key=True,
     )
+    child_organisation = models.ManyToManyField(
+        'Organisation',
+        through='Child_Organisation_City',
+        related_name='child_organisation',
+        blank=True
+    )
+    child_city = models.ManyToManyField(
+        'City',
+        through='Child_Organisation_City',
+        related_name='child_organisation',
+        blank=True
+    )
 
 
 #many to many tables
 
 class Coordinator_Organisation_City(models.Model):
-    coordinator = models.ForeignKey(Coordinator, on_delete=models.DO_NOTHING)
-    organisation = models.ForeignKey(Organisation, on_delete=models.DO_NOTHING)
-    city = models.ForeignKey(City, on_delete=models.DO_NOTHING)
+    coordinator = models.ForeignKey(Coordinator, on_delete=models.DO_NOTHING, null=True)
+    organisation = models.ForeignKey(Organisation, on_delete=models.DO_NOTHING, null=True)
+    city = models.ForeignKey(City, on_delete=models.DO_NOTHING, null=True)
 
 
 class Volunteer_Organisation_City(models.Model):
