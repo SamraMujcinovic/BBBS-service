@@ -138,6 +138,8 @@ class Child(models.Model):
     )
 
     code = models.CharField(max_length=8)
+    first_name = models.CharField(max_length=10)
+    last_name = models.CharField(max_length=15)
     gender = models.CharField(choices=GENDER, max_length=1)
     birth_year = models.PositiveIntegerField()
     school_status = models.CharField(choices=SCHOOL_STATUS, max_length=50)
@@ -174,15 +176,15 @@ class Coordinator_Organisation_City(models.Model):
 
 
 class Volunteer_Organisation_City(models.Model):
-    volunteer = models.ForeignKey(Volunteer, on_delete=models.DO_NOTHING)
-    organisation = models.ForeignKey(Organisation, on_delete=models.DO_NOTHING)
-    city = models.ForeignKey(City, on_delete=models.DO_NOTHING)
+    volunteer = models.ForeignKey(Volunteer, on_delete=models.DO_NOTHING, null=True)
+    organisation = models.ForeignKey(Organisation, on_delete=models.DO_NOTHING, null=True)
+    city = models.ForeignKey(City, on_delete=models.DO_NOTHING, null=True)
 
 
 class Child_Organisation_City(models.Model):
-    child = models.ForeignKey(Child, on_delete=models.DO_NOTHING)
-    organisation = models.ForeignKey(Organisation, on_delete=models.DO_NOTHING)
-    city = models.ForeignKey(City, on_delete=models.DO_NOTHING)
+    child = models.ForeignKey(Child, on_delete=models.DO_NOTHING, null=True)
+    organisation = models.ForeignKey(Organisation, on_delete=models.DO_NOTHING, null=True)
+    city = models.ForeignKey(City, on_delete=models.DO_NOTHING, null=True)
 
 
 class Hang_Out_Place(models.Model):
