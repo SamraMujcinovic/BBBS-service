@@ -7,6 +7,7 @@ from .utilis import CURRENT_DATE
 
 from django.contrib.auth.models import User
 from .models import (
+    Form,
     Organisation,
     City,
     Coordinator,
@@ -266,3 +267,60 @@ def generateChildCode(child: Child):
         + child_initials
         + str(child_id)
     )
+
+
+class FormSerializer(serializers.ModelSerializer):
+    date = serializers.DateField(
+        format="%d-%m-%Y", input_formats=["%d-%m-%Y", "iso-8601"]
+    )
+
+    class Meta:
+        model = Form
+        fields = (
+            "date",
+            "duration",
+            "activity_type",
+            "place",
+            "evaluation",
+            "activities",
+            "description",
+            "volunteer",  # change this to read only filed (set it later to currently logged in user)
+        )
+
+    def validate(self, data):
+        for place in data["place"]:
+            if place.name == "Ostalo" and data["description"] is None:
+                raise serializers.ValidationError(
+                    {
+                        "place": "Option Ostalo is selected but description is not provided",
+                        "description": "Add description for option Ostalo",
+                    }
+                )
+
+        return data
+
+    @atomic  # used as transactional
+    def create(self, validated_data):
+        date = validated_data["date"]
+        duration = validated_data["duration"]
+        activity_type = validated_data["activity_type"]
+        evaluation = validated_data["evaluation"]
+        description = validated_data["description"]
+        place = validated_data["place"]
+        activities = validated_data["activities"]
+        volunteer = validated_data["volunteer"]
+
+        new_form = Form.objects.create(
+            date=date,
+            duration=duration,
+            activity_type=activity_type,
+            evaluation=evaluation,
+            description=description,
+            volunteer=volunteer,
+        )
+        new_form.save()
+
+        new_form.place.set(place)
+        new_form.activities.set(activities)
+
+        return new_form

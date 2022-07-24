@@ -4,8 +4,13 @@ from django.http import HttpResponse
 from rest_framework import viewsets
 
 # import local data
-from .serializers import ChildSerializer, CoordinatorSerializer, VolunteerSerializer
-from .models import Child, Coordinator, Volunteer
+from .serializers import (
+    ChildSerializer,
+    CoordinatorSerializer,
+    FormSerializer,
+    VolunteerSerializer,
+)
+from .models import Child, Coordinator, Form, Volunteer
 
 
 def index(request):
@@ -37,3 +42,12 @@ class ChildView(viewsets.ModelViewSet):
 
     # specify serializer to be used
     serializer_class = ChildSerializer
+
+
+# create a viewset
+class FormView(viewsets.ModelViewSet):
+    # define queryset
+    queryset = Form.objects.all()
+
+    # specify serializer to be used
+    serializer_class = FormSerializer

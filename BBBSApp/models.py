@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -268,3 +269,4 @@ class Form(models.Model):
     evaluation = models.CharField(choices=EVALUATION, max_length=50)
     activities = models.ManyToManyField(Activities)
     description = models.TextField(max_length=500, null=True)
+    volunteer = models.ForeignKey(Volunteer, on_delete=models.DO_NOTHING, null=False)
