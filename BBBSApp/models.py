@@ -150,20 +150,19 @@ class Child(models.Model):
     guardian_consent = models.BooleanField(choices=GUARDIAN_CONSENT)
     volunteer = models.OneToOneField(
         Volunteer,
-        on_delete=models.DO_NOTHING,  # check what to do on delete
-        primary_key=True,
+        on_delete=models.DO_NOTHING  # check what to do on delete
     )
     child_organisation = models.ManyToManyField(
         'Organisation',
         through='Child_Organisation_City',
         related_name='child_organisation',
-        blank=True
+        blank=False
     )
     child_city = models.ManyToManyField(
         'City',
         through='Child_Organisation_City',
         related_name='child_organisation',
-        blank=True
+        blank=False
     )
 
 

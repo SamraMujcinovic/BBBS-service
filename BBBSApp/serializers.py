@@ -106,6 +106,9 @@ class VolunteerSerializer(serializers.ModelSerializer):
         new_volunteer.volunteer_city.set(validated_data['volunteer_city'])
         return new_volunteer
 
+class TooManyOptionsSelectedException(Exception):
+    pass
+
 
 class ChildSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
@@ -115,7 +118,7 @@ class ChildSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Child
-        read_only_fields = ('id', 'code')
+        read_only_fields = ('id', 'code', 'status')
         fields = (
             'id', 
             'first_name',
@@ -137,6 +140,12 @@ class ChildSerializer(serializers.ModelSerializer):
             'last_name': {'write_only': True}
         }
 
+    def validate(self, data):
+        if len(data['developmental_difficulties']) > 3:
+            raise serializers.ValidationError({"developmental_difficulties": "To many options selected"})
+
+        return data
+
     @atomic  # used as transactional
     def create(self, validated_data):
         first_name = validated_data['first_name']
@@ -149,7 +158,6 @@ class ChildSerializer(serializers.ModelSerializer):
         developmental_difficulties = validated_data['developmental_difficulties']
         family_model = validated_data['family_model']
         mentoring_reason = validated_data['mentoring_reason']
-        status = validated_data['status']
         guardian_consent = validated_data['guardian_consent']
         volunteer = validated_data['volunteer']
         new_child = Child.objects.create(
@@ -159,7 +167,7 @@ class ChildSerializer(serializers.ModelSerializer):
             birth_year=birth_year,
             school_status=school_status,
             family_model=family_model,
-            status=status,
+            status=volunteer is not None,
             guardian_consent=guardian_consent,
             volunteer=volunteer)
         new_child.child_city.set(child_city)
