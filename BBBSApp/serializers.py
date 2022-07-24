@@ -2,7 +2,8 @@ from rest_framework import serializers
 from rest_framework_bulk import BulkSerializerMixin
 
 from django.db.transaction import atomic
-from datetime import date
+
+from .utilis import CURRENT_DATE
 
 from django.contrib.auth.models import User
 from .models import (
@@ -17,10 +18,11 @@ from .models import (
 )
 
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ("first_name", "last_name", "email")
+def validateField(data, field):
+    if len(data) < 1:
+        raise serializers.ValidationError({field: "Field is required"})
+
+    return data
 
 
 def saveUser(validated_data):
@@ -33,6 +35,12 @@ def saveUser(validated_data):
         # https://stackoverflow.com/questions/32455744/set-optional-username-django-user#:~:text=auth%20you%20can't%20make,create%20a%20username%20from%20email.
         username=validated_data["user"]["email"],
     )
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("first_name", "last_name", "email")
 
 
 class Organisation_Serializer(serializers.ModelSerializer):
@@ -63,6 +71,12 @@ class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):
         # you need to make sure there is a comma , in the fields section:
         # https://stackoverflow.com/questions/31595217/django-rest-framework-serializer-class-meta
         fields = ("user", "coordinator_organisation", "coordinator_city")
+
+    def validate(self, data):
+        validateField(data["coordinator_organisation"], "coordinator_organisation")
+        validateField(data["coordinator_city"], "coordinator_city")
+
+        return data
 
     @atomic  # used as transactional
     def create(self, validated_data):
@@ -105,6 +119,12 @@ class VolunteerSerializer(serializers.ModelSerializer):
             "volunteer_organisation",
             "volunteer_city",
         )
+
+    def validate(self, data):
+        validateField(data["volunteer_organisation"], "volunteer_organisation")
+        validateField(data["volunteer_city"], "volunteer_city")
+
+        return data
 
     @atomic  # used as transactional
     def create(self, validated_data):
@@ -178,9 +198,11 @@ class ChildSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
-        if len(data["developmental_difficulties"]) > 3:
+        validateField(data["child_organisation"], "child_organisation")
+        validateField(data["child_city"], "child_city")
+        if len(data["mentoring_reason"]) > 5:
             raise serializers.ValidationError(
-                {"developmental_difficulties": "To many options selected"}
+                {"mentoring_reason": "To many options selected"}
             )
 
         return data
@@ -235,7 +257,7 @@ def generateChildCode(child: Child):
     last_name = child.last_name
     child_city_abbreviation = child.child_city.all().first().abbreviation
 
-    last_two_digits_of_current_year = date.today().year % 100
+    last_two_digits_of_current_year = CURRENT_DATE.year % 100
     child_initials = "" + first_name[0].upper() + last_name[0].upper()
 
     return (
