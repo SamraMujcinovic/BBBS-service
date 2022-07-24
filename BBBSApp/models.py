@@ -14,54 +14,55 @@ class Organisation(models.Model):
 
 
 class Coordinator(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)  # has first_name, last_name, username, password, email, group
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE
+    )  # has first_name, last_name, username, password, email, group
     coordinator_organisation = models.ManyToManyField(
-        'Organisation',
-        through='Coordinator_Organisation_City',
-        related_name='coordinator_organisation',
-        blank=True
+        "Organisation",
+        through="Coordinator_Organisation_City",
+        related_name="coordinator_organisation",
+        blank=True,
     )
     coordinator_city = models.ManyToManyField(
-        'City',
-        through='Coordinator_Organisation_City',
-        related_name='coordinator_city',
-        blank=True
+        "City",
+        through="Coordinator_Organisation_City",
+        related_name="coordinator_city",
+        blank=True,
     )
+
 
 class Volunteer(models.Model):
-    GENDER = (
-        ('M', 'Muški'),
-        ('Z', 'Ženski'),
-        ('N', 'Ostali')
-    )
+    GENDER = (("M", "Muški"), ("Z", "Ženski"), ("N", "Ostali"))
 
     EDUCATION_LEVEL = (
-        ('SSSS', 'Srednja skola'),
-        ('BSc', 'Bachelor'),
-        ('MSc', 'Master'),
-        ('Dr', 'Doktor nauka')
+        ("SSSS", "Srednja skola"),
+        ("BSc", "Bachelor"),
+        ("MSc", "Master"),
+        ("Dr", "Doktor nauka"),
     )
 
-    ZAPOSLEN = 'zaposlen'
-    NEZAPOSLEN = 'nezaposlen'
-    STUDENT = 'student'
+    ZAPOSLEN = "zaposlen"
+    NEZAPOSLEN = "nezaposlen"
+    STUDENT = "student"
     EMPLOYMENT_STATUS = (
-        (ZAPOSLEN, 'Zaposlen'),
-        (NEZAPOSLEN, 'Nezaposlen'),
-        (STUDENT, 'Student')
+        (ZAPOSLEN, "Zaposlen"),
+        (NEZAPOSLEN, "Nezaposlen"),
+        (STUDENT, "Student"),
     )
 
     GOOD_CONDUCT_CERTIFICATE = (
-        (True, u'Da'),
-        (False, u'Ne'),
+        (True, "Da"),
+        (False, "Ne"),
     )
 
     STATUS = (
-        (True, u'Aktivan'),
-        (False, u'Neaktivan'),
+        (True, "Aktivan"),
+        (False, "Neaktivan"),
     )
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)  # has first_name, last_name, username, password, email, group
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE
+    )  # has first_name, last_name, username, password, email, group
     gender = models.CharField(max_length=1, choices=GENDER)
     birth_year = models.PositiveIntegerField()
     phone_number = models.CharField(validators=[PHONE_REGEX], max_length=9, null=True)
@@ -72,16 +73,16 @@ class Volunteer(models.Model):
     status = models.BooleanField(choices=STATUS)
     coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.DO_NOTHING)
     volunteer_organisation = models.ManyToManyField(
-        'Organisation',
-        through='Volunteer_Organisation_City',
-        related_name='volunteer_organisation',
-        blank=True
+        "Organisation",
+        through="Volunteer_Organisation_City",
+        related_name="volunteer_organisation",
+        blank=True,
     )
     volunteer_city = models.ManyToManyField(
-        'City',
-        through='Volunteer_Organisation_City',
-        related_name='volunteer_city',
-        blank=True
+        "City",
+        through="Volunteer_Organisation_City",
+        related_name="volunteer_city",
+        blank=True,
     )
 
 
@@ -99,42 +100,38 @@ class Mentoring_Reason(models.Model):
 
 
 class Child(models.Model):
-    GENDER = (
-        ('M', 'Muški'),
-        ('Z', 'Ženski'),
-        ('N', 'Ostali')
-    )
+    GENDER = (("M", "Muški"), ("Z", "Ženski"), ("N", "Ostali"))
 
-    DISCIPILE = 'pohađa'
-    CUSTOMIZED_PROGRAMM = 'prilagođeni program'
-    SPECIAL_EDUCATION = 'specijalno obrazovanje'
-    NON_DISCIPILE = 'ne pohađa'
+    DISCIPILE = "pohađa"
+    CUSTOMIZED_PROGRAMM = "prilagođeni program"
+    SPECIAL_EDUCATION = "specijalno obrazovanje"
+    NON_DISCIPILE = "ne pohađa"
     SCHOOL_STATUS = (
-        (DISCIPILE, 'Pohađa'),
-        (CUSTOMIZED_PROGRAMM, 'Pohađa po prilagođenom programu'),
-        (SPECIAL_EDUCATION, 'Pohađa specijalno obrazovanje'),
-        (NON_DISCIPILE, 'Ne pohađa')
+        (DISCIPILE, "Pohađa"),
+        (CUSTOMIZED_PROGRAMM, "Pohađa po prilagođenom programu"),
+        (SPECIAL_EDUCATION, "Pohađa specijalno obrazovanje"),
+        (NON_DISCIPILE, "Ne pohađa"),
     )
 
-    FAMILY = 'potpuna porodica'
-    ONEPARENT_FAMILY = 'nepotpuna porodica'
-    FOSTER_PARENTS = 'skrbnici/hranitelji'
-    INSTITUTION = 'institucija'
+    FAMILY = "potpuna porodica"
+    ONEPARENT_FAMILY = "nepotpuna porodica"
+    FOSTER_PARENTS = "skrbnici/hranitelji"
+    INSTITUTION = "institucija"
     FAMILY_MODEL = (
-        (FAMILY, 'Potpuna porodica'),
-        (ONEPARENT_FAMILY, 'Jednoroditeljska/nepotpuna porodica'),
-        (FOSTER_PARENTS, 'Skrbnici/Hranitelji'),
-        (INSTITUTION, 'Institucija')
+        (FAMILY, "Potpuna porodica"),
+        (ONEPARENT_FAMILY, "Jednoroditeljska/nepotpuna porodica"),
+        (FOSTER_PARENTS, "Skrbnici/Hranitelji"),
+        (INSTITUTION, "Institucija"),
     )
 
     STATUS = (
-        (True, u'Aktivan'),
-        (False, u'Neaktivan'),
+        (True, "Aktivan"),
+        (False, "Neaktivan"),
     )
 
     GUARDIAN_CONSENT = (
-        (True, u'Posjeduje'),
-        (False, u'Ne posjeduje'),
+        (True, "Posjeduje"),
+        (False, "Ne posjeduje"),
     )
 
     code = models.CharField(max_length=8)
@@ -149,40 +146,46 @@ class Child(models.Model):
     status = models.BooleanField(choices=STATUS)
     guardian_consent = models.BooleanField(choices=GUARDIAN_CONSENT)
     volunteer = models.OneToOneField(
-        Volunteer,
-        on_delete=models.DO_NOTHING  # check what to do on delete
+        Volunteer, on_delete=models.DO_NOTHING, null=True  # check what to do on delete
     )
     child_organisation = models.ManyToManyField(
-        'Organisation',
-        through='Child_Organisation_City',
-        related_name='child_organisation',
-        blank=False
+        "Organisation",
+        through="Child_Organisation_City",
+        related_name="child_organisation",
+        blank=False,
     )
     child_city = models.ManyToManyField(
-        'City',
-        through='Child_Organisation_City',
-        related_name='child_organisation',
-        blank=False
+        "City",
+        through="Child_Organisation_City",
+        related_name="child_organisation",
+        blank=False,
     )
 
 
-#many to many tables
+# many to many tables
+
 
 class Coordinator_Organisation_City(models.Model):
     coordinator = models.ForeignKey(Coordinator, on_delete=models.DO_NOTHING, null=True)
-    organisation = models.ForeignKey(Organisation, on_delete=models.DO_NOTHING, null=True)
+    organisation = models.ForeignKey(
+        Organisation, on_delete=models.DO_NOTHING, null=True
+    )
     city = models.ForeignKey(City, on_delete=models.DO_NOTHING, null=True)
 
 
 class Volunteer_Organisation_City(models.Model):
     volunteer = models.ForeignKey(Volunteer, on_delete=models.DO_NOTHING, null=True)
-    organisation = models.ForeignKey(Organisation, on_delete=models.DO_NOTHING, null=True)
+    organisation = models.ForeignKey(
+        Organisation, on_delete=models.DO_NOTHING, null=True
+    )
     city = models.ForeignKey(City, on_delete=models.DO_NOTHING, null=True)
 
 
 class Child_Organisation_City(models.Model):
     child = models.ForeignKey(Child, on_delete=models.DO_NOTHING, null=True)
-    organisation = models.ForeignKey(Organisation, on_delete=models.DO_NOTHING, null=True)
+    organisation = models.ForeignKey(
+        Organisation, on_delete=models.DO_NOTHING, null=True
+    )
     city = models.ForeignKey(City, on_delete=models.DO_NOTHING, null=True)
 
 
@@ -196,17 +199,19 @@ class Activity_Category(models.Model):
 
 class Activities(models.Model):
     name = models.CharField(max_length=80)
-    activity_category = models.ForeignKey(Activity_Category, on_delete=models.DO_NOTHING)
+    activity_category = models.ForeignKey(
+        Activity_Category, on_delete=models.DO_NOTHING
+    )
 
 
 class Form(models.Model):
-    INDIVIDUALY = 'individualno'
-    WITH_OTHER_COUPLES = 'sa drugim parovima'
-    GROUP = 'grupno'
+    INDIVIDUALY = "individualno"
+    WITH_OTHER_COUPLES = "sa drugim parovima"
+    GROUP = "grupno"
     ACTIVITY_TYPE = (
-        (INDIVIDUALY, 'Individualno'),
-        (WITH_OTHER_COUPLES, 'Druzenje sa drugim parovima'),
-        (GROUP, 'Grupna aktivnost')
+        (INDIVIDUALY, "Individualno"),
+        (WITH_OTHER_COUPLES, "Druzenje sa drugim parovima"),
+        (GROUP, "Grupna aktivnost"),
     )
 
     BAD = 0
@@ -214,10 +219,10 @@ class Form(models.Model):
     GOOD = 2
     GREAT = 3
     EVALUATION = (
-        (BAD, 'Lose'),
-        (NOT_BAD, 'Nije lose'),
-        (GOOD, 'Dobro'),
-        (GREAT, 'Super')
+        (BAD, "Lose"),
+        (NOT_BAD, "Nije lose"),
+        (GOOD, "Dobro"),
+        (GREAT, "Super"),
     )
 
     date = models.DateField()
