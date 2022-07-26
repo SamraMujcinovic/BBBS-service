@@ -1,5 +1,6 @@
 from django.core.validators import RegexValidator
 from datetime import date
+import decimal
 
 
 # phone regex validator
@@ -9,3 +10,7 @@ PHONE_REGEX = RegexValidator(
 )
 
 CURRENT_DATE = date.today()
+
+
+def countDecimalPlaces(number):
+    return abs(decimal.Decimal(str(number)).as_tuple().exponent)

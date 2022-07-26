@@ -1,9 +1,10 @@
+import decimal
 from rest_framework import serializers
 from rest_framework_bulk import BulkSerializerMixin
 
 from django.db.transaction import atomic
 
-from .utilis import CURRENT_DATE
+from .utilis import CURRENT_DATE, countDecimalPlaces
 
 from django.contrib.auth.models import User
 from .models import (
@@ -270,9 +271,7 @@ def generateChildCode(child: Child):
 
 
 class FormSerializer(serializers.ModelSerializer):
-    date = serializers.DateField(
-        format="%d-%m-%Y", input_formats=["%d-%m-%Y", "iso-8601"]
-    )
+    date = serializers.DateField(format="%d.%m.%Y", input_formats=["%d.%m.%Y"])
 
     class Meta:
         model = Form
@@ -288,6 +287,27 @@ class FormSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, data):
+        if Form.objects.filter(date=data["date"], volunteer=data["volunteer"]).exists():
+            raise serializers.ValidationError({"": "Entry already exists"})
+
+        if len(data["place"]) > 3:
+            raise serializers.ValidationError({"place": "Too many options selected"})
+
+        if len(data["activities"]) > 6:
+            raise serializers.ValidationError(
+                {"activities": "Too many options selected"}
+            )
+
+        if float(data["duration"]) == 0.0:
+            raise serializers.ValidationError(
+                {"duration": "Duration cannot be zero(0)"}
+            )
+
+        if countDecimalPlaces(data["duration"]) > 2:
+            raise serializers.ValidationError(
+                {"duration": "Duration must be specified with two(2) decimal places"}
+            )
+
         for place in data["place"]:
             if place.name == "Ostalo" and data["description"] is None:
                 raise serializers.ValidationError(
@@ -295,6 +315,19 @@ class FormSerializer(serializers.ModelSerializer):
                         "place": "Option Ostalo is selected but description is not provided",
                         "description": "Add description for option Ostalo",
                     }
+                )
+
+        if data["description"] is not None:
+            description_words = data["description"].split()
+
+            if len(description_words) < 50:
+                raise serializers.ValidationError(
+                    {"description": "Description has to include at least 50 words"}
+                )
+
+            if len(description_words) > 100:
+                raise serializers.ValidationError(
+                    {"description": "Description cannot have more than 100 words"}
                 )
 
         return data
