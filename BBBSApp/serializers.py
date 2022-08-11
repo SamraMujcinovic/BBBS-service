@@ -3,6 +3,9 @@ from rest_framework_bulk import BulkSerializerMixin
 from django.core.mail import send_mail
 import strgen
 
+
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from django.db.transaction import atomic
 
 from .utilis import CURRENT_DATE, countDecimalPlaces
@@ -39,8 +42,8 @@ def saveUser(validated_data):
         # but User model has to have username!!
         # https://stackoverflow.com/questions/32455744/set-optional-username-django-user#:~:text=auth%20you%20can't%20make,create%20a%20username%20from%20email.
         username=validated_data["user"]["email"],
-        password=random_password,
     )
+    newUser.set_password(random_password)
 
     newUser.save()
 
@@ -48,7 +51,7 @@ def saveUser(validated_data):
         "Welcome to the BBBS Organisation. Here you can find your credientials for app access. \n Username: "
         + newUser.username
         + "\n Password: "
-        + newUser.password
+        + random_password
     )
 
     send_mail(
@@ -380,3 +383,13 @@ class FormSerializer(serializers.ModelSerializer):
         new_form.activities.set(activities)
 
         return new_form
+
+
+class LoginSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super(LoginSerializer, cls).get_token(user)
+
+        # Add custom claims
+        token["username"] = user.username
+        return token
