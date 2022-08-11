@@ -1,6 +1,7 @@
-import decimal
 from rest_framework import serializers
 from rest_framework_bulk import BulkSerializerMixin
+from django.core.mail import send_mail
+import strgen
 
 from django.db.transaction import atomic
 
@@ -28,7 +29,9 @@ def validateField(data, field):
 
 
 def saveUser(validated_data):
-    return User.objects.create(
+    random_password = strgen.StringGenerator("[\w\d]{10}").render()
+
+    newUser = User.objects.create(
         first_name=validated_data["user"]["first_name"],
         last_name=validated_data["user"]["last_name"],
         email=validated_data["user"]["email"],
@@ -36,7 +39,27 @@ def saveUser(validated_data):
         # but User model has to have username!!
         # https://stackoverflow.com/questions/32455744/set-optional-username-django-user#:~:text=auth%20you%20can't%20make,create%20a%20username%20from%20email.
         username=validated_data["user"]["email"],
+        password=random_password,
     )
+
+    newUser.save()
+
+    emailMessage = (
+        "Welcome to the BBBS Organisation. Here you can find your credientials for app access. \n Username: "
+        + newUser.username
+        + "\n Password: "
+        + newUser.password
+    )
+
+    send_mail(
+        "User credientials",
+        emailMessage,
+        None,
+        [newUser.email],
+        fail_silently=False,
+    )
+
+    return newUser
 
 
 class UserSerializer(serializers.ModelSerializer):
