@@ -10,7 +10,7 @@ from django.db.transaction import atomic
 
 from .utilis import CURRENT_DATE, countDecimalPlaces
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from .models import (
     Form,
     Organisation,
@@ -94,6 +94,7 @@ class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Coordinator
+        permissions = Group.objects.get(name="coordinator").permissions.all()
         # So if you don't want to use the __all__ value,
         # but you only have 1 value in your model,
         # you need to make sure there is a comma , in the fields section:
@@ -119,6 +120,10 @@ class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):
         )
         organisation_city.save()
 
+        # add coordinator to coordinator group
+        coordinator_group = Group.objects.get(name="coordinator")
+        coordinator_group.user_set.add(new_user)
+
         return new_coordinator
 
 
@@ -133,6 +138,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Volunteer
+        permissions = Group.objects.get(name="volunteer").permissions.all()
         fields = (
             "user",
             "gender",
@@ -157,6 +163,10 @@ class VolunteerSerializer(serializers.ModelSerializer):
     @atomic  # used as transactional
     def create(self, validated_data):
         new_user = saveUser(validated_data)
+        volunteer_group = Group.objects.get(name="volunteer")
+        volunteer_group.user_set.add(new_user)
+        new_user.groups.add(volunteer_group)
+        new_user.save()
         gender = validated_data["gender"]
         birth_year = validated_data["birth_year"]
         phone_number = validated_data["phone_number"]

@@ -5,7 +5,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 # import viewsets
 from rest_framework import viewsets
 
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import (
+    AllowAny,
+    BasePermission,
+)
 
 # import local data
 from .serializers import (
@@ -22,9 +25,37 @@ def index(request):
     return HttpResponse("Hello, world. You're at the bbbs index.")
 
 
+class IsCoordinatorOrAdmin(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.groups.filter(name="coordinator").exists()
+            or request.user.groups.filter(name="admin").exists()
+        )
+
+    def has_object_permission(self, request, view, obj):
+        return (
+            request.user.groups.filter(name="coordinator").exists()
+            or request.user.groups.filter(name="admin").exists()
+        )
+
+
+class IsVolunteerOrAdmin(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.groups.filter(name="volunteer").exists()
+            or request.user.groups.filter(name="admin").exists()
+        )
+
+    def has_object_permission(self, request, view, obj):
+        return (
+            request.user.groups.filter(name="volunteer").exists()
+            or request.user.groups.filter(name="admin").exists()
+        )
+
+
 # create a viewset
 class CoordinatorView(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsCoordinatorOrAdmin,)
     # define queryset
     queryset = Coordinator.objects.all()
 
@@ -34,6 +65,7 @@ class CoordinatorView(viewsets.ModelViewSet):
 
 # create a viewset
 class VolunteerView(viewsets.ModelViewSet):
+    permission_classes = [IsCoordinatorOrAdmin | IsVolunteerOrAdmin]
     # define queryset
     queryset = Volunteer.objects.all()
 
@@ -43,6 +75,7 @@ class VolunteerView(viewsets.ModelViewSet):
 
 # create a viewset
 class ChildView(viewsets.ModelViewSet):
+    permission_classes = [IsCoordinatorOrAdmin | IsVolunteerOrAdmin]
     # define queryset
     queryset = Child.objects.all()
 
@@ -52,6 +85,7 @@ class ChildView(viewsets.ModelViewSet):
 
 # create a viewset
 class FormView(viewsets.ModelViewSet):
+    permission_classes = [IsCoordinatorOrAdmin | IsVolunteerOrAdmin]
     # define queryset
     queryset = Form.objects.all()
 
