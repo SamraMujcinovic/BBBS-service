@@ -26,6 +26,7 @@ SECRET_KEY = "django-insecure-ma(g(**!=a^b!%f&jb7+grio&ler%fzz&l1y36j_az54wfmusr
 DEBUG = True
 
 ALLOWED_HOSTS = []
+APPEND_SLASH = False
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "BBBSApp",
 ]
 
@@ -103,6 +105,8 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.DjangoObjectPermissions",
     ],
 }
+
+SIMPLE_JWT = {"ROTATE_REFRESH_TOKENS": True, "BLACKLIST_AFTER_ROTATION": True}
 
 
 # Password validation
