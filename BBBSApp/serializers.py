@@ -198,6 +198,12 @@ class VolunteerSerializer(serializers.ModelSerializer):
 
         return new_volunteer
 
+    def get(self, pk):
+        volunteer_details = Volunteer.objects.get(pk=pk)
+
+        serializer = VolunteerSerializer(volunteer_details)
+        return serializer.data
+
 
 class ChildSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
@@ -284,6 +290,12 @@ class ChildSerializer(serializers.ModelSerializer):
         new_child.mentoring_reason.set(mentoring_reason)
 
         return new_child
+
+    def get(self, pk):
+        child_details = Child.objects.get(pk=pk)
+
+        serializer = ChildSerializer(child_details)
+        return serializer.data
 
 
 def generateChildCode(child: Child):
@@ -397,6 +409,12 @@ class FormSerializer(serializers.ModelSerializer):
         new_form.activities.set(activities)
 
         return new_form
+
+    def get(self, pk):
+        form_details = Form.objects.get(pk=pk)
+
+        serializer = FormSerializer(form_details)
+        return serializer.data
 
 
 class LoginSerializer(TokenObtainPairSerializer):
