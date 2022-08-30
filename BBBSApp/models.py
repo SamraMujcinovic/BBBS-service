@@ -38,7 +38,7 @@ class Coordinator(models.Model):
     )
 
     def __str__(self):
-        return self.user.first_name + self.user.last_name
+        return self.user.first_name + " " + self.user.last_name
 
 
 class Volunteer(models.Model):
@@ -99,7 +99,7 @@ class Volunteer(models.Model):
     )
 
     def __str__(self):
-        return self.user.first_name + self.user.last_name
+        return self.user.first_name + " " + self.user.last_name
 
 
 class Developmental_Difficulties(models.Model):

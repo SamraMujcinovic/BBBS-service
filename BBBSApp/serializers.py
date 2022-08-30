@@ -94,7 +94,6 @@ class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Coordinator
-        permissions = Group.objects.get(name="coordinator").permissions.all()
         # So if you don't want to use the __all__ value,
         # but you only have 1 value in your model,
         # you need to make sure there is a comma , in the fields section:
@@ -138,7 +137,6 @@ class VolunteerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Volunteer
-        permissions = Group.objects.get(name="volunteer").permissions.all()
         fields = (
             "user",
             "gender",
@@ -209,6 +207,8 @@ class ChildSerializer(serializers.ModelSerializer):
     child_city = serializers.PrimaryKeyRelatedField(
         many=True, queryset=City.objects.all()
     )
+
+    # dodati volunteer field sa querysetom koji ce sadrzavati samo neaktivne volontere. na prikazu volontera i djeteta prikazati onog drugog
 
     class Meta:
         model = Child
@@ -311,6 +311,7 @@ class FormSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Form
+        read_only_fields = ("volunteer",)
         fields = (
             "date",
             "duration",
@@ -319,11 +320,13 @@ class FormSerializer(serializers.ModelSerializer):
             "evaluation",
             "activities",
             "description",
-            "volunteer",  # change this to read only filed (set it later to currently logged in user)
         )
 
     def validate(self, data):
-        if Form.objects.filter(date=data["date"], volunteer=data["volunteer"]).exists():
+        current_user = self.context["request"].user
+        volunteer = Volunteer.objects.filter(user_id=current_user.id).first()
+
+        if Form.objects.filter(date=data["date"], volunteer=volunteer).exists():
             raise serializers.ValidationError({"": "Entry already exists"})
 
         if len(data["place"]) > 3:
@@ -377,7 +380,8 @@ class FormSerializer(serializers.ModelSerializer):
         description = validated_data["description"]
         place = validated_data["place"]
         activities = validated_data["activities"]
-        volunteer = validated_data["volunteer"]
+        current_user = self.context["request"].user
+        volunteer = Volunteer.objects.filter(user_id=current_user.id).first()
 
         new_form = Form.objects.create(
             date=date,

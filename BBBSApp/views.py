@@ -26,7 +26,7 @@ from .serializers import (
     LoginSerializer,
     VolunteerSerializer,
 )
-from .models import Child, Coordinator, Form, Volunteer
+from .models import Child, Coordinator, Coordinator_Organisation_City, Form, Volunteer
 
 
 def index(request):
@@ -57,6 +57,18 @@ class IsVolunteer(BasePermission):
         return request.user.groups.filter(name="volunteer").exists()
 
 
+def isUserAdmin(user):
+    return user.groups.filter(name="admin").exists()
+
+
+def isUserCoordinator(user):
+    return user.groups.filter(name="coordinator").exists()
+
+
+def isUserVolunteer(user):
+    return user.groups.filter(name="volunteer").exists()
+
+
 # create a viewset
 class CoordinatorView(viewsets.ModelViewSet):
     def get_permissions(self):
@@ -68,7 +80,13 @@ class CoordinatorView(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
     # define queryset
-    queryset = Coordinator.objects.all()
+    def get_queryset(self):
+        user = self.request.user
+        if isUserAdmin(user):
+            return Coordinator.objects.all()
+        if isUserCoordinator(user):
+            return Coordinator.objects.filter(user_id=user.id)
+        return None
 
     # specify serializer to be used
     serializer_class = CoordinatorSerializer
@@ -77,7 +95,23 @@ class CoordinatorView(viewsets.ModelViewSet):
 # create a viewset
 class VolunteerView(viewsets.ModelViewSet):
     # define queryset
-    queryset = Volunteer.objects.all()
+    def get_queryset(self):
+        user = self.request.user
+        if isUserAdmin(user):
+            return Volunteer.objects.all()
+        if isUserCoordinator(user):
+            # allow coordinators to see volunteers from his organisation and city
+            coordinator = Coordinator.objects.get(user_id=user.id)
+            coordinator_organisation_city = Coordinator_Organisation_City.objects.get(
+                coordinator_id=coordinator.id
+            )
+            return Volunteer.objects.filter(
+                volunteer_organisation=coordinator_organisation_city.organisation_id,
+                volunteer_city=coordinator_organisation_city.city_id,
+            )
+        if isUserVolunteer(user):
+            return Volunteer.objects.filter(user_id=user.id)
+        return None
 
     def get_permissions(self):
         permission_classes = []
@@ -94,7 +128,21 @@ class VolunteerView(viewsets.ModelViewSet):
 # create a viewset
 class ChildView(viewsets.ModelViewSet):
     # define queryset
-    queryset = Child.objects.all()
+    def get_queryset(self):
+        user = self.request.user
+        if isUserAdmin(user):
+            return Child.objects.all()
+        if isUserCoordinator(user):
+            # allow coordinators to see childs from his organisation and city
+            coordinator = Coordinator.objects.get(user_id=user.id)
+            coordinator_organisation_city = Coordinator_Organisation_City.objects.get(
+                coordinator_id=coordinator.id
+            )
+            return Child.objects.filter(
+                child_organisation=coordinator_organisation_city.organisation_id,
+                child_city=coordinator_organisation_city.city_id,
+            )
+        return None
 
     def get_permissions(self):
         permission_classes = []
@@ -111,7 +159,21 @@ class ChildView(viewsets.ModelViewSet):
 # create a viewset
 class FormView(viewsets.ModelViewSet):
     # define queryset
-    queryset = Form.objects.all()
+    def get_queryset(self):
+        user = self.request.user
+        if isUserAdmin(user):
+            return Form.objects.all()
+        if isUserCoordinator(user):
+            # allow coordinators to see forms of his volunteer
+            coordinator = Coordinator.objects.get(user_id=user.id)
+            return Form.objects.filter(
+                volunteer__coordinator_id=coordinator.id
+            ).order_by("-date")
+        if isUserVolunteer(user):
+            # allow volunteers to see his forms
+            volunteer = Volunteer.objects.get(user_id=user.id)
+            return Form.objects.filter(volunteer=volunteer.id).order_by("-date")
+        return None
 
     def get_permissions(self):
         permission_classes = []
