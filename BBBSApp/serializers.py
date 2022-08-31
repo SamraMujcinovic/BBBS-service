@@ -214,8 +214,6 @@ class ChildSerializer(serializers.ModelSerializer):
         many=True, queryset=City.objects.all()
     )
 
-    # dodati volunteer field sa querysetom koji ce sadrzavati samo neaktivne volontere. na prikazu volontera i djeteta prikazati onog drugog
-
     class Meta:
         model = Child
         read_only_fields = ("id", "code", "status")
@@ -288,6 +286,10 @@ class ChildSerializer(serializers.ModelSerializer):
 
         new_child.developmental_difficulties.set(developmental_difficulties)
         new_child.mentoring_reason.set(mentoring_reason)
+
+        if volunteer is not None:
+            volunteer.status = True
+            volunteer.save()
 
         return new_child
 

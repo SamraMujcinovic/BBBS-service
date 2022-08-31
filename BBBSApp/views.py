@@ -1,3 +1,4 @@
+from unittest import result
 from django.http import HttpResponse
 
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -6,9 +7,6 @@ from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
     BlacklistedToken,
 )
-
-
-from rest_framework import status
 
 # import viewsets
 from rest_framework import viewsets
@@ -83,7 +81,7 @@ class CoordinatorView(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if isUserAdmin(user):
-            return Coordinator.objects.all()
+            return Coordinator.objects.all().order_by('user__first_name', 'user__last_name')
         if isUserCoordinator(user):
             return Coordinator.objects.filter(user_id=user.id)
         return None
@@ -97,21 +95,32 @@ class VolunteerView(viewsets.ModelViewSet):
     # define queryset
     def get_queryset(self):
         user = self.request.user
+        resultset = []
         if isUserAdmin(user):
-            return Volunteer.objects.all()
+            resultset = Volunteer.objects.all()
         if isUserCoordinator(user):
             # allow coordinators to see volunteers from his organisation and city
             coordinator = Coordinator.objects.get(user_id=user.id)
             coordinator_organisation_city = Coordinator_Organisation_City.objects.get(
                 coordinator_id=coordinator.id
             )
-            return Volunteer.objects.filter(
+            resultset = Volunteer.objects.filter(
                 volunteer_organisation=coordinator_organisation_city.organisation_id,
                 volunteer_city=coordinator_organisation_city.city_id,
             )
         if isUserVolunteer(user):
-            return Volunteer.objects.filter(user_id=user.id)
-        return None
+            resultset = Volunteer.objects.filter(user_id=user.id)
+
+        if self.request.GET.get("status") is not None:
+            volunteer_status = self.request.GET.get("status")
+            resultset = resultset.filter(status=volunteer_status)
+        if self.request.GET.get("organisation") is not None:
+            volunteer_organisation = self.request.GET.get("organisation")
+            resultset = resultset.filter(volunteer_organisation=volunteer_organisation)
+        if self.request.GET.get("city") is not None:
+            volunteer_city = self.request.GET.get("city")
+            resultset = resultset.filter(volunteer_city=volunteer_city)
+        return resultset.order_by('user__first_name', 'user__last_name')
 
     def get_permissions(self):
         permission_classes = []
@@ -130,19 +139,27 @@ class ChildView(viewsets.ModelViewSet):
     # define queryset
     def get_queryset(self):
         user = self.request.user
+        resultset = []
         if isUserAdmin(user):
-            return Child.objects.all()
+            resultset = Child.objects.all()
         if isUserCoordinator(user):
             # allow coordinators to see childs from his organisation and city
             coordinator = Coordinator.objects.get(user_id=user.id)
             coordinator_organisation_city = Coordinator_Organisation_City.objects.get(
                 coordinator_id=coordinator.id
             )
-            return Child.objects.filter(
+            resultset = Child.objects.filter(
                 child_organisation=coordinator_organisation_city.organisation_id,
                 child_city=coordinator_organisation_city.city_id,
             )
-        return None
+
+        if self.request.GET.get("organisation") is not None:
+            child_organisation = self.request.GET.get("organisation")
+            resultset = resultset.filter(child_organisation=child_organisation)
+        if self.request.GET.get("city") is not None:
+            child_city = self.request.GET.get("city")
+            resultset = resultset.filter(child_city=child_city)
+        return resultset
 
     def get_permissions(self):
         permission_classes = []

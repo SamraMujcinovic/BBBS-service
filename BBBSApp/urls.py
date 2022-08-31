@@ -6,11 +6,14 @@ from django.urls import path
 router = DefaultRouter()
 router.register(r"coordinators", views.CoordinatorView, basename="Coordinator")
 router.register(r"volunteers", views.VolunteerView, basename="Volunteer")
-router.register(r"volunteers/<int:pk>/", views.VolunteerView, basename="Volunteer")
+router.register(
+    r"volunteers/(?P<status>.+)/(?P<organisation>.+)/(?P<city>.+)", views.VolunteerView, basename="Volunteer"
+)
 router.register(r"childs", views.ChildView, basename="Child")
-router.register(r"childs/<int:pk>/", views.ChildView, basename="Child")
+router.register(
+    r"childs/(?P<organisation>.+)/(?P<city>.+)", views.ChildView, basename="Child"
+)
 router.register(r"forms", views.FormView, basename="Form")
-router.register(r"forms/<int:pk>/", views.FormView, basename="Form")
 
 urlpatterns = [
     url(r"^", include(router.urls)),
