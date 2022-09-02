@@ -14,3 +14,14 @@ CURRENT_DATE = date.today()
 
 def countDecimalPlaces(number):
     return abs(decimal.Decimal(str(number)).as_tuple().exponent)
+
+def isUserAdmin(user):
+    return user.groups.filter(name="admin").exists()
+
+
+def isUserCoordinator(user):
+    return user.groups.filter(name="coordinator").exists()
+
+
+def isUserVolunteer(user):
+    return user.groups.filter(name="volunteer").exists()

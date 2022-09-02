@@ -25,15 +25,13 @@ class Coordinator(models.Model):
         User, on_delete=models.CASCADE
     )  # has first_name, last_name, username, password, email, group
     coordinator_organisation = models.ManyToManyField(
-        "Organisation",
+        Organisation,
         through="Coordinator_Organisation_City",
-        related_name="coordinator_organisation",
         blank=True,
     )
     coordinator_city = models.ManyToManyField(
-        "City",
+        City,
         through="Coordinator_Organisation_City",
-        related_name="coordinator_city",
         blank=True,
     )
 
@@ -88,13 +86,11 @@ class Volunteer(models.Model):
     volunteer_organisation = models.ManyToManyField(
         "Organisation",
         through="Volunteer_Organisation_City",
-        related_name="volunteer_organisation",
         blank=True,
     )
     volunteer_city = models.ManyToManyField(
         "City",
         through="Volunteer_Organisation_City",
-        related_name="volunteer_city",
         blank=True,
     )
 
@@ -173,6 +169,7 @@ class Child(models.Model):
     mentoring_reason = models.ManyToManyField(Mentoring_Reason)
     status = models.BooleanField(choices=STATUS)
     guardian_consent = models.BooleanField(choices=GUARDIAN_CONSENT)
+    coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.DO_NOTHING)
     volunteer = models.OneToOneField(
         Volunteer, on_delete=models.DO_NOTHING, null=True  # check what to do on delete
     )

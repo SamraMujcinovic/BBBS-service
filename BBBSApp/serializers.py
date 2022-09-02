@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework_bulk import BulkSerializerMixin
 from django.core.mail import send_mail
 import strgen
@@ -8,7 +9,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from django.db.transaction import atomic
 
-from .utilis import CURRENT_DATE, countDecimalPlaces
+from .utilis import CURRENT_DATE, countDecimalPlaces, isUserAdmin, isUserCoordinator
 
 from django.contrib.auth.models import User, Group
 from .models import (
@@ -25,7 +26,7 @@ from .models import (
 
 
 def validateField(data, field):
-    if len(data) < 1:
+    if data.get(field, None) is None or len(data[field]) < 1:
         raise serializers.ValidationError({field: "Field is required"})
 
     return data
@@ -85,12 +86,9 @@ class City_Serializer(serializers.ModelSerializer):
 
 class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):
     user = UserSerializer()
-    coordinator_organisation = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Organisation.objects.all()
-    )
-    coordinator_city = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=City.objects.all()
-    )
+    # https://stackoverflow.com/questions/51425977/django-rest-framework-serializer-field-is-required-even-when-required-false
+    coordinator_organisation = PrimaryKeyRelatedField(many=True, read_only=False, queryset=Organisation.objects.all())
+    coordinator_city = PrimaryKeyRelatedField(many=True, read_only=False, queryset=City.objects.all())
 
     class Meta:
         model = Coordinator
@@ -101,10 +99,11 @@ class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):
         fields = ("user", "coordinator_organisation", "coordinator_city")
 
     def validate(self, data):
-        validateField(data["coordinator_organisation"], "coordinator_organisation")
-        validateField(data["coordinator_city"], "coordinator_city")
+        validateField(data, "coordinator_organisation")
+        validateField(data, "coordinator_city")
 
         return data
+
 
     @atomic  # used as transactional
     def create(self, validated_data):
@@ -128,12 +127,9 @@ class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):
 
 class VolunteerSerializer(serializers.ModelSerializer):
     user = UserSerializer()
-    volunteer_organisation = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Organisation.objects.all()
-    )
-    volunteer_city = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=City.objects.all()
-    )
+    # https://stackoverflow.com/questions/51425977/django-rest-framework-serializer-field-is-required-even-when-required-false
+    volunteer_organisation = PrimaryKeyRelatedField(many=True, read_only=False, queryset=Organisation.objects.all(), required=False, allow_null=True, default=None)
+    volunteer_city = PrimaryKeyRelatedField(many=True, read_only=False, queryset=City.objects.all(), required=False, allow_null=True, default=None)
 
     class Meta:
         model = Volunteer
@@ -153,18 +149,22 @@ class VolunteerSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, data):
-        validateField(data["volunteer_organisation"], "volunteer_organisation")
-        validateField(data["volunteer_city"], "volunteer_city")
+        current_user = self.context["request"].user
+        if isUserAdmin(current_user):
+            validateField(data, "volunteer_organisation")
+            validateField(data, "volunteer_city")
 
         return data
 
     @atomic  # used as transactional
     def create(self, validated_data):
         new_user = saveUser(validated_data)
+        # add volunteer to volunteer group
         volunteer_group = Group.objects.get(name="volunteer")
         volunteer_group.user_set.add(new_user)
         new_user.groups.add(volunteer_group)
         new_user.save()
+
         gender = validated_data["gender"]
         birth_year = validated_data["birth_year"]
         phone_number = validated_data["phone_number"]
@@ -173,7 +173,6 @@ class VolunteerSerializer(serializers.ModelSerializer):
         employment_status = validated_data["employment_status"]
         good_conduct_certificate = validated_data["good_conduct_certificate"]
         status = validated_data["status"]
-        coordinator = validated_data["coordinator"]
 
         new_volunteer = Volunteer.objects.create(
             user=new_user,
@@ -185,16 +184,37 @@ class VolunteerSerializer(serializers.ModelSerializer):
             employment_status=employment_status,
             good_conduct_certificate=good_conduct_certificate,
             status=status,
-            coordinator=coordinator,
         )
         new_volunteer.save()
 
-        organisation_city = Volunteer_Organisation_City.objects.create(
-            organisation=validated_data["volunteer_organisation"][0],
-            city=validated_data["volunteer_city"][0],
-            volunteer=new_volunteer,
-        )
-        organisation_city.save()
+        current_user = self.context["request"].user
+        if isUserAdmin(current_user):
+            # allow admin users to choose coordinator
+            coordinator = validated_data["coordinator"]
+            new_volunteer.coordinator = coordinator
+
+            # and organisation and city
+            organisation_city = Volunteer_Organisation_City.objects.create(
+                organisation=validated_data["volunteer_organisation"][0],
+                city=validated_data["volunteer_city"][0],
+                volunteer=new_volunteer,
+            )
+            organisation_city.save()
+        else:
+            # if currently logged-in user is coordinator and he adds volunteer
+            # then set currently logged-in user as volunteer coordinator
+            coordinator = Coordinator.objects.filter(user_id=current_user.id).first()
+            new_volunteer.coordinator = coordinator
+
+            # volunteers city and organisation should be same as coordinators
+            organisation_city = Volunteer_Organisation_City.objects.create(
+                organisation=coordinator.coordinator_organisation.first(),
+                city=coordinator.coordinator_city.first(),
+                volunteer=new_volunteer,
+            )
+            organisation_city.save()
+
+        new_volunteer.save()
 
         return new_volunteer
 
@@ -207,12 +227,11 @@ class VolunteerSerializer(serializers.ModelSerializer):
 
 class ChildSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
-    child_organisation = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Organisation.objects.all()
-    )
-    child_city = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=City.objects.all()
-    )
+    # https://stackoverflow.com/questions/51425977/django-rest-framework-serializer-field-is-required-even-when-required-false
+    child_organisation = PrimaryKeyRelatedField(many=True, read_only=False, queryset=Organisation.objects.all(),
+                                                    required=False, allow_null=True, default=None)
+    child_city = PrimaryKeyRelatedField(many=True, read_only=False, queryset=City.objects.all(), required=False,
+                                            allow_null=True, default=None)
 
     class Meta:
         model = Child
@@ -230,6 +249,7 @@ class ChildSerializer(serializers.ModelSerializer):
             "mentoring_reason",
             "status",
             "guardian_consent",
+            "coordinator",
             "volunteer",
             "child_organisation",
             "child_city",
@@ -240,8 +260,10 @@ class ChildSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
-        validateField(data["child_organisation"], "child_organisation")
-        validateField(data["child_city"], "child_city")
+        current_user = self.context["request"].user
+        if isUserAdmin(current_user):
+            validateField(data, "child_organisation")
+            validateField(data, "child_city")
         if len(data["mentoring_reason"]) > 5:
             raise serializers.ValidationError(
                 {"mentoring_reason": "To many options selected"}
@@ -270,16 +292,33 @@ class ChildSerializer(serializers.ModelSerializer):
             family_model=family_model,
             status=volunteer is not None,
             guardian_consent=guardian_consent,
-            volunteer=volunteer,
+            volunteer=volunteer
         )
         new_child.save()
 
-        organisation_city = Child_Organisation_City.objects.create(
-            organisation=validated_data["child_organisation"][0],
-            city=validated_data["child_city"][0],
-            child=new_child,
-        )
-        organisation_city.save()
+        # set coordinator
+        current_user = self.context["request"].user
+        if isUserAdmin(current_user):
+            # allow admin to choose organisation and city for child
+            coordinator = validated_data["coordinator"]
+            new_child.coordinator = coordinator
+            organisation_city = Child_Organisation_City.objects.create(
+                organisation=validated_data["child_organisation"][0],
+                city=validated_data["child_city"][0],
+                child=new_child,
+            )
+            organisation_city.save()
+        else:
+            # if currently logged-in user is coordinator and he adds child
+            # then set currently logged-in users organisation and city as childs organisation and city
+            coordinator = Coordinator.objects.filter(user_id=current_user.id).first()
+            new_child.coordinator = coordinator
+            organisation_city = Child_Organisation_City.objects.create(
+                organisation=coordinator.coordinator_organisation.first(),
+                city=coordinator.coordinator_city.first(),
+                child=new_child,
+            )
+            organisation_city.save()
 
         new_child.code = generateChildCode(new_child)
         new_child.save()

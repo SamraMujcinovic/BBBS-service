@@ -25,6 +25,7 @@ from .serializers import (
     VolunteerSerializer,
 )
 from .models import Child, Coordinator, Coordinator_Organisation_City, Form, Volunteer
+from .utilis import isUserAdmin, isUserCoordinator, isUserVolunteer
 
 
 def index(request):
@@ -53,18 +54,6 @@ class IsVolunteer(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return request.user.groups.filter(name="volunteer").exists()
-
-
-def isUserAdmin(user):
-    return user.groups.filter(name="admin").exists()
-
-
-def isUserCoordinator(user):
-    return user.groups.filter(name="coordinator").exists()
-
-
-def isUserVolunteer(user):
-    return user.groups.filter(name="volunteer").exists()
 
 
 # create a viewset
@@ -120,6 +109,9 @@ class VolunteerView(viewsets.ModelViewSet):
         if self.request.GET.get("city") is not None:
             volunteer_city = self.request.GET.get("city")
             resultset = resultset.filter(volunteer_city=volunteer_city)
+        if self.request.GET.get("coordinator") is not None:
+            coordinator = self.request.GET.get("coordinator")
+            resultset = resultset.filter(coordinator=coordinator)
         return resultset.order_by('user__first_name', 'user__last_name')
 
     def get_permissions(self):

@@ -7,7 +7,7 @@ router = DefaultRouter()
 router.register(r"coordinators", views.CoordinatorView, basename="Coordinator")
 router.register(r"volunteers", views.VolunteerView, basename="Volunteer")
 router.register(
-    r"volunteers/(?P<status>.+)/(?P<organisation>.+)/(?P<city>.+)", views.VolunteerView, basename="Volunteer"
+    r"volunteers/(?P<status>.+)/(?P<organisation>.+)/(?P<city>.+)/(?P<coordinator>.+)", views.VolunteerView, basename="Volunteer"
 )
 router.register(r"childs", views.ChildView, basename="Child")
 router.register(
