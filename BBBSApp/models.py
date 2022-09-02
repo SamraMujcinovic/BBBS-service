@@ -177,9 +177,10 @@ class Child(models.Model):
         "Organisation",
         through="Child_Organisation_City",
         related_name="child_organisation",
+        blank=True
     )
     child_city = models.ManyToManyField(
-        "City", through="Child_Organisation_City", related_name="child_city"
+        "City", through="Child_Organisation_City", related_name="child_city", blank=True
     )
 
     def __str__(self):
