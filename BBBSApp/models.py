@@ -42,11 +42,15 @@ class Coordinator(models.Model):
 class Volunteer(models.Model):
     GENDER = (("M", "Muški"), ("Z", "Ženski"), ("N", "Ostali"))
 
+    SSS = "SSS"
+    BSc = "BSc"
+    MSc = "MSc"
+    Dr = "Dr"
     EDUCATION_LEVEL = (
-        ("SSSS", "Srednja skola"),
-        ("BSc", "Bachelor"),
-        ("MSc", "Master"),
-        ("Dr", "Doktor nauka"),
+        (SSS, "Srednja skola"),
+        (BSc, "Bachelor"),
+        (MSc, "Master"),
+        (Dr, "Doktor nauka"),
     )
 
     ZAPOSLEN = "zaposlen"
@@ -58,16 +62,6 @@ class Volunteer(models.Model):
         (STUDENT, "Student"),
     )
 
-    GOOD_CONDUCT_CERTIFICATE = (
-        (True, "Da"),
-        (False, "Ne"),
-    )
-
-    STATUS = (
-        (True, "Aktivan"),
-        (False, "Neaktivan"),
-    )
-
     user = models.OneToOneField(
         User, on_delete=models.CASCADE
     )  # has first_name, last_name, username, password, email, group
@@ -77,11 +71,11 @@ class Volunteer(models.Model):
         null=False,
     )
     phone_number = models.CharField(validators=[PHONE_REGEX], max_length=9, null=True)
-    education_level = models.CharField(choices=EDUCATION_LEVEL, max_length=4)
+    education_level = models.CharField(choices=EDUCATION_LEVEL, max_length=15)
     faculty_department = models.TextField(null=True)
     employment_status = models.CharField(choices=EMPLOYMENT_STATUS, max_length=15)
-    good_conduct_certificate = models.BooleanField(choices=GOOD_CONDUCT_CERTIFICATE)
-    status = models.BooleanField(choices=STATUS)
+    good_conduct_certificate = models.BooleanField()
+    status = models.BooleanField()
     coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.DO_NOTHING)
     volunteer_organisation = models.ManyToManyField(
         "Organisation",
@@ -145,16 +139,6 @@ class Child(models.Model):
         (INSTITUTION, "Institucija"),
     )
 
-    STATUS = (
-        (True, "Aktivan"),
-        (False, "Neaktivan"),
-    )
-
-    GUARDIAN_CONSENT = (
-        (True, "Posjeduje"),
-        (False, "Ne posjeduje"),
-    )
-
     code = models.CharField(max_length=8)
     first_name = models.CharField(max_length=10)
     last_name = models.CharField(max_length=15)
@@ -167,8 +151,8 @@ class Child(models.Model):
     developmental_difficulties = models.ManyToManyField(Developmental_Difficulties)
     family_model = models.CharField(choices=FAMILY_MODEL, max_length=50)
     mentoring_reason = models.ManyToManyField(Mentoring_Reason)
-    status = models.BooleanField(choices=STATUS)
-    guardian_consent = models.BooleanField(choices=GUARDIAN_CONSENT)
+    status = models.BooleanField()
+    guardian_consent = models.BooleanField()
     coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.DO_NOTHING)
     volunteer = models.OneToOneField(
         Volunteer, on_delete=models.DO_NOTHING, null=True  # check what to do on delete
@@ -263,7 +247,7 @@ class Form(models.Model):
     duration = models.FloatField()
     activity_type = models.CharField(choices=ACTIVITY_TYPE, max_length=50)
     place = models.ManyToManyField(Hang_Out_Place)
-    evaluation = models.CharField(choices=EVALUATION, max_length=50)
+    evaluation = models.PositiveSmallIntegerField(choices=EVALUATION)
     activities = models.ManyToManyField(Activities)
     description = models.TextField(max_length=500, null=True)
     volunteer = models.ForeignKey(Volunteer, on_delete=models.DO_NOTHING, null=False)

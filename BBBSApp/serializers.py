@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework_bulk import BulkSerializerMixin
 from django.core.mail import send_mail
 import strgen
@@ -9,7 +8,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from django.db.transaction import atomic
 
-from .utilis import CURRENT_DATE, countDecimalPlaces, isUserAdmin, isUserCoordinator
+from .utilis import CURRENT_DATE, countDecimalPlaces, isUserAdmin
 
 from django.contrib.auth.models import User, Group
 from .models import (
@@ -22,6 +21,12 @@ from .models import (
     Coordinator_Organisation_City,
     Volunteer_Organisation_City,
     Child_Organisation_City,
+    Mentoring_Reason,
+    Mentoring_Reason_Category,
+    Developmental_Difficulties,
+    Hang_Out_Place,
+    Activities,
+    Activity_Category
 )
 
 
@@ -30,6 +35,23 @@ def validateField(data, field):
         raise serializers.ValidationError({field: "Field is required"})
 
     return data
+
+
+class ChoiceField(serializers.ChoiceField):
+    def to_representation(self, obj):
+        if obj == '' and self.allow_blank:
+            return obj
+        return self._choices[obj]
+
+    def to_internal_value(self, data):
+        # To support inserts with the value
+        if data == '' and self.allow_blank:
+            return ''
+
+        for key, val in self._choices.items():
+            if val == data:
+                return key
+        self.fail('invalid_choice', input=data)
 
 
 def saveUser(validated_data):
@@ -133,9 +155,15 @@ class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):
 
 class VolunteerSerializer(serializers.ModelSerializer):
     user = UserSerializer()
+    gender = ChoiceField(choices=Volunteer.GENDER)
+    education_level = ChoiceField(choices=Volunteer.EDUCATION_LEVEL)
+    employment_status = ChoiceField(choices=Volunteer.EMPLOYMENT_STATUS)
+    child = serializers.CharField(source='child.code')
+
 
     class Meta:
         model = Volunteer
+        read_only_fields = ("child",)
         fields = (
             "user",
             "gender",
@@ -149,6 +177,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
             "coordinator",
             "volunteer_organisation",
             "volunteer_city",
+            "child"
         )
 
     def to_representation(self, instance):
@@ -219,8 +248,29 @@ class VolunteerSerializer(serializers.ModelSerializer):
         return serializer.data
 
 
+class MentoringReasonCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Mentoring_Reason_Category
+        fields = ("name",)
+
+
+class MentoringReasonSerializer(serializers.ModelSerializer):
+    category = MentoringReasonCategorySerializer()
+    class Meta:
+        model = Mentoring_Reason
+        fields = ("name", "category")
+
+
+class Developmental_DifficultiesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Developmental_Difficulties
+        fields = ("name", )
+
+
 class ChildSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
+    gender = ChoiceField(choices=Child.GENDER)
+    school_status = ChoiceField(choices=Child.SCHOOL_STATUS)
 
     class Meta:
         model = Child
@@ -250,8 +300,11 @@ class ChildSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         self.fields["coordinator"] = CoordinatorSerializer(read_only=True)
+        self.fields["volunteer"] = VolunteerSerializer(read_only=True)
         self.fields["child_organisation"] = Organisation_Serializer(many=True, read_only=True)
         self.fields["child_city"] = City_Serializer(many=True, read_only=True)
+        self.fields["mentoring_reason"] = MentoringReasonSerializer(many=True, read_only=True)
+        self.fields["developmental_difficulties"] = Developmental_DifficultiesSerializer(many=True, read_only=True)
         return super(ChildSerializer, self).to_representation(instance)
 
     def validate(self, data):
@@ -324,6 +377,26 @@ class ChildSerializer(serializers.ModelSerializer):
         serializer = ChildSerializer(child_details)
         return serializer.data
 
+    def update(self, instance, validated_data):
+        old_volunteer = None
+        new_volunteer = None
+        if instance.volunteer is not None:
+            old_volunteer = Volunteer.objects.get(id=instance.volunteer.id)
+        if validated_data.get('volunteer', instance.volunteer) is not None:
+            new_volunteer = Volunteer.objects.get(id=validated_data.get('volunteer', instance.volunteer).id)
+        instance.volunteer = validated_data.get('volunteer', instance.volunteer)
+
+        if old_volunteer is not None:
+            old_volunteer.status = False
+            old_volunteer.save()
+
+        if new_volunteer is not None:
+            new_volunteer.status = True
+            new_volunteer.save()
+
+        instance.save()
+        return instance
+
 
 def generateChildCode(child: Child):
     child_id = len(Child.objects.all())
@@ -345,8 +418,29 @@ def generateChildCode(child: Child):
     )
 
 
+class HangOutPlaceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hang_Out_Place
+        fields = ("name",)
+
+
+class ActivityCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Activity_Category
+        fields = ("name",)
+
+
+class ActivitiesSerializer(serializers.ModelSerializer):
+    activity_category = ActivityCategorySerializer()
+    class Meta:
+        model = Activities
+        fields = ("name", "activity_category")
+
+
 class FormSerializer(serializers.ModelSerializer):
     date = serializers.DateField(format="%d.%m.%Y", input_formats=["%d.%m.%Y"])
+    activity_type = ChoiceField(choices=Form.ACTIVITY_TYPE)
+    evaluation = ChoiceField(choices=Form.EVALUATION)
 
     class Meta:
         model = Form
@@ -360,6 +454,12 @@ class FormSerializer(serializers.ModelSerializer):
             "activities",
             "description",
         )
+
+    def to_representation(self, instance):
+        self.fields["volunteer"] = VolunteerSerializer(read_only=True)
+        self.fields["place"] = HangOutPlaceSerializer(many=True, read_only=True)
+        self.fields["activities"] = ActivitiesSerializer(many=True, read_only=True)
+        return super(FormSerializer, self).to_representation(instance)
 
     def validate(self, data):
         current_user = self.context["request"].user
