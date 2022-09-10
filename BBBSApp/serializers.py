@@ -97,13 +97,13 @@ class UserSerializer(serializers.ModelSerializer):
 class Organisation_Serializer(serializers.ModelSerializer):
     class Meta:
         model = Organisation
-        fields = ("name",)
+        fields = ("name", "id")
 
 
 class City_Serializer(serializers.ModelSerializer):
     class Meta:
         model = City
-        fields = ("name",)
+        fields = ("name", "id")
 
 
 class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):

@@ -1,12 +1,15 @@
-from unittest import result
 from django.http import HttpResponse
 
-from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
     BlacklistedToken,
 )
+
+from django.middleware import csrf
+from django.contrib.auth import authenticate
+from django.conf import settings
+from rest_framework import status
 
 # import viewsets
 from rest_framework import viewsets
@@ -16,6 +19,7 @@ from rest_framework.response import Response
 
 from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
 
+from .authentication import CustomAuthentication
 # import local data
 from .serializers import (
     ChildSerializer,
@@ -58,6 +62,7 @@ class IsVolunteer(BasePermission):
 
 # create a viewset
 class CoordinatorView(viewsets.ModelViewSet):
+    authentication_classes = [CustomAuthentication]
     def get_permissions(self):
         permission_classes = []
         if self.action == "create":
@@ -81,6 +86,7 @@ class CoordinatorView(viewsets.ModelViewSet):
 
 # create a viewset
 class VolunteerView(viewsets.ModelViewSet):
+    authentication_classes = [CustomAuthentication]
     # define queryset
     def get_queryset(self):
         user = self.request.user
@@ -128,6 +134,7 @@ class VolunteerView(viewsets.ModelViewSet):
 
 # create a viewset
 class ChildView(viewsets.ModelViewSet):
+    authentication_classes = [CustomAuthentication]
     # define queryset
     def get_queryset(self):
         user = self.request.user
@@ -167,6 +174,7 @@ class ChildView(viewsets.ModelViewSet):
 
 # create a viewset
 class FormView(viewsets.ModelViewSet):
+    authentication_classes = [CustomAuthentication]
     # define queryset
     def get_queryset(self):
         user = self.request.user
@@ -196,9 +204,40 @@ class FormView(viewsets.ModelViewSet):
     serializer_class = FormSerializer
 
 
-class LoginView(TokenObtainPairView):
-    permission_classes = (AllowAny,)
-    serializer_class = LoginSerializer
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request, format=None):
+        data = request.data
+        response = Response()
+        username = data.get('username', None)
+        password = data.get('password', None)
+        user = authenticate(username=username, password=password)
+        print(user)
+        if user is not None:
+            if user.is_active:
+                data = get_tokens_for_user(user)
+                response.set_cookie(
+                    key=settings.SIMPLE_JWT['AUTH_COOKIE'],
+                    value=data["access"],
+                    expires=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
+                    httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+                    samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
+                )
+                csrf.get_token(request)
+                response.data = {"Success": "Login successfully", "data": data}
+                return response
+            else:
+                return Response({"No active": "This account is not active!!"}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({"Invalid": "Invalid username or password!!"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class LogoutView(APIView):
