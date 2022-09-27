@@ -91,7 +91,7 @@ def saveUser(validated_data):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("first_name", "last_name", "email")
+        fields = ("id", "first_name", "last_name", "email")
 
 
 class Organisation_Serializer(serializers.ModelSerializer):
@@ -118,7 +118,7 @@ class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):
         # but you only have 1 value in your model,
         # you need to make sure there is a comma , in the fields section:
         # https://stackoverflow.com/questions/31595217/django-rest-framework-serializer-class-meta
-        fields = ("user", "coordinator_organisation", "coordinator_city")
+        fields = ("id", "user", "coordinator_organisation", "coordinator_city")
 
     def to_representation(self, instance):
         return super(CoordinatorSerializer, self).to_representation(instance)
@@ -158,13 +158,14 @@ class VolunteerSerializer(serializers.ModelSerializer):
     gender = ChoiceField(choices=Volunteer.GENDER)
     education_level = ChoiceField(choices=Volunteer.EDUCATION_LEVEL)
     employment_status = ChoiceField(choices=Volunteer.EMPLOYMENT_STATUS)
-    child = serializers.CharField(source='child.code')
+    child = serializers.CharField(source='child.code', required=False)
 
 
     class Meta:
         model = Volunteer
-        read_only_fields = ("child",)
+        read_only_fields = ("id", "child")
         fields = (
+            "id",
             "user",
             "gender",
             "birth_year",
@@ -251,26 +252,27 @@ class VolunteerSerializer(serializers.ModelSerializer):
 class MentoringReasonCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Mentoring_Reason_Category
-        fields = ("name",)
+        fields = ("id","name")
 
 
 class MentoringReasonSerializer(serializers.ModelSerializer):
     category = MentoringReasonCategorySerializer()
     class Meta:
         model = Mentoring_Reason
-        fields = ("name", "category")
+        fields = ("id", "name", "category")
 
 
 class Developmental_DifficultiesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Developmental_Difficulties
-        fields = ("name", )
+        fields = ("id", "name")
 
 
 class ChildSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     gender = ChoiceField(choices=Child.GENDER)
     school_status = ChoiceField(choices=Child.SCHOOL_STATUS)
+    family_model = ChoiceField(choices=Child.FAMILY_MODEL)
 
     class Meta:
         model = Child
@@ -326,7 +328,7 @@ class ChildSerializer(serializers.ModelSerializer):
         family_model = validated_data["family_model"]
         mentoring_reason = validated_data["mentoring_reason"]
         guardian_consent = validated_data["guardian_consent"]
-        volunteer = validated_data["volunteer"]
+        volunteer = validated_data.get("volunteer", None)
         new_child = Child.objects.create(
             first_name=first_name,
             last_name=last_name,
@@ -344,7 +346,7 @@ class ChildSerializer(serializers.ModelSerializer):
         current_user = self.context["request"].user
         if isUserAdmin(current_user):
             # allow admin to choose organisation and city for child
-            coordinator = validated_data["coordinator"]
+            coordinator = validated_data.get("coordinator", None)
             new_child.coordinator = coordinator
         else:
             # if currently logged-in user is coordinator and he adds child
@@ -421,20 +423,20 @@ def generateChildCode(child: Child):
 class HangOutPlaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hang_Out_Place
-        fields = ("name",)
+        fields = ("id", "name")
 
 
 class ActivityCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Activity_Category
-        fields = ("name",)
+        fields = ("id", "name")
 
 
 class ActivitiesSerializer(serializers.ModelSerializer):
     activity_category = ActivityCategorySerializer()
     class Meta:
         model = Activities
-        fields = ("name", "activity_category")
+        fields = ("id", "name", "activity_category")
 
 
 class FormSerializer(serializers.ModelSerializer):
@@ -444,8 +446,9 @@ class FormSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Form
-        read_only_fields = ("volunteer",)
+        read_only_fields = ("id", "volunteer",)
         fields = (
+            "id",
             "date",
             "duration",
             "activity_type",
@@ -551,4 +554,6 @@ class LoginSerializer(TokenObtainPairSerializer):
 
         # Add custom claims
         token["username"] = user.username
+        token["first_name"] = user.first_name
+        token["group"] = user.groups.all()
         return token

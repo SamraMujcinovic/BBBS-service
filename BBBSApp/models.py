@@ -135,7 +135,7 @@ class Child(models.Model):
     FAMILY_MODEL = (
         (FAMILY, "Potpuna porodica"),
         (ONEPARENT_FAMILY, "Jednoroditeljska/nepotpuna porodica"),
-        (FOSTER_PARENTS, "Skrbnici/Hranitelji"),
+        (FOSTER_PARENTS, "Skrbnici/hranitelji"),
         (INSTITUTION, "Institucija"),
     )
 
@@ -228,7 +228,7 @@ class Form(models.Model):
     GROUP = "grupno"
     ACTIVITY_TYPE = (
         (INDIVIDUALY, "Individualno"),
-        (WITH_OTHER_COUPLES, "Druzenje sa drugim parovima"),
+        (WITH_OTHER_COUPLES, "Druženje sa drugim parovima"),
         (GROUP, "Grupna aktivnost"),
     )
 
@@ -237,8 +237,8 @@ class Form(models.Model):
     GOOD = 2
     GREAT = 3
     EVALUATION = (
-        (BAD, "Lose"),
-        (NOT_BAD, "Nije lose"),
+        (BAD, "Loše"),
+        (NOT_BAD, "Nije loše"),
         (GOOD, "Dobro"),
         (GREAT, "Super"),
     )
@@ -249,5 +249,5 @@ class Form(models.Model):
     place = models.ManyToManyField(Hang_Out_Place)
     evaluation = models.PositiveSmallIntegerField(choices=EVALUATION)
     activities = models.ManyToManyField(Activities)
-    description = models.TextField(max_length=500, null=True)
+    description = models.TextField(max_length=500, null=True, blank=True)
     volunteer = models.ForeignKey(Volunteer, on_delete=models.DO_NOTHING, null=False)

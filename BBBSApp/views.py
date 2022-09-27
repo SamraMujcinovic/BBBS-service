@@ -27,8 +27,30 @@ from .serializers import (
     FormSerializer,
     LoginSerializer,
     VolunteerSerializer,
+    Organisation_Serializer,
+    City_Serializer,
+    MentoringReasonSerializer,
+    Developmental_DifficultiesSerializer,
+    MentoringReasonCategorySerializer,
+    HangOutPlaceSerializer,
+    ActivitiesSerializer,
+    ActivityCategorySerializer
 )
-from .models import Child, Coordinator, Coordinator_Organisation_City, Form, Volunteer
+from .models import (
+    Child,
+    Coordinator,
+    Coordinator_Organisation_City,
+    Form,
+    Volunteer,
+    Organisation,
+    City,
+    Mentoring_Reason,
+    Developmental_Difficulties,
+    Mentoring_Reason_Category,
+    Hang_Out_Place,
+    Activities,
+    Activity_Category
+)
 from .utilis import isUserAdmin, isUserCoordinator, isUserVolunteer
 
 
@@ -60,6 +82,54 @@ class IsVolunteer(BasePermission):
         return request.user.groups.filter(name="volunteer").exists()
 
 
+class OrganisationView(viewsets.ModelViewSet):
+    authentication_classes = [CustomAuthentication]
+    queryset = Organisation.objects.all()
+    serializer_class = Organisation_Serializer
+
+
+class CityView(viewsets.ModelViewSet):
+    authentication_classes = [CustomAuthentication]
+    queryset = City.objects.all()
+    serializer_class = City_Serializer
+
+
+class DevelopmentalDifficultiesView(viewsets.ModelViewSet):
+    authentication_classes = [CustomAuthentication]
+    queryset = Developmental_Difficulties.objects.all()
+    serializer_class = Developmental_DifficultiesSerializer
+
+
+class MentoringReasonView(viewsets.ModelViewSet):
+    authentication_classes = [CustomAuthentication]
+    queryset = Mentoring_Reason.objects.all()
+    serializer_class = MentoringReasonSerializer
+
+
+class MentoringReasonCategoryView(viewsets.ModelViewSet):
+    authentication_classes = [CustomAuthentication]
+    queryset = Mentoring_Reason_Category.objects.all()
+    serializer_class = MentoringReasonCategorySerializer
+
+
+class HangOutPlaceView(viewsets.ModelViewSet):
+    authentication_classes = [CustomAuthentication]
+    queryset = Hang_Out_Place.objects.all()
+    serializer_class = HangOutPlaceSerializer
+
+
+class ActivitiesView(viewsets.ModelViewSet):
+    authentication_classes = [CustomAuthentication]
+    queryset = Activities.objects.all()
+    serializer_class = ActivitiesSerializer
+
+
+class ActivityCategoryView(viewsets.ModelViewSet):
+    authentication_classes = [CustomAuthentication]
+    queryset = Activity_Category.objects.all()
+    serializer_class = ActivityCategorySerializer
+
+
 # create a viewset
 class CoordinatorView(viewsets.ModelViewSet):
     authentication_classes = [CustomAuthentication]
@@ -74,8 +144,16 @@ class CoordinatorView(viewsets.ModelViewSet):
     # define queryset
     def get_queryset(self):
         user = self.request.user
+        resultset = []
         if isUserAdmin(user):
-            return Coordinator.objects.all().order_by('user__first_name', 'user__last_name')
+            resultset = Coordinator.objects.all().order_by('user__first_name', 'user__last_name')
+            if self.request.GET.get("organisation") is not None:
+                coordinator_organisation = self.request.GET.get("organisation")
+                resultset = resultset.filter(coordinator_organisation=coordinator_organisation)
+            if self.request.GET.get("city") is not None:
+                coordinator_city = self.request.GET.get("city")
+                resultset = resultset.filter(coordinator_city=coordinator_city)
+            return resultset
         if isUserCoordinator(user):
             return Coordinator.objects.filter(user_id=user.id)
         return None
@@ -109,6 +187,9 @@ class VolunteerView(viewsets.ModelViewSet):
         if self.request.GET.get("status") is not None:
             volunteer_status = self.request.GET.get("status")
             resultset = resultset.filter(status=volunteer_status)
+        if self.request.GET.get("gender") is not None:
+            volunteer_gender = self.request.GET.get("gender")
+            resultset = resultset.filter(gender=volunteer_gender)
         if self.request.GET.get("organisation") is not None:
             volunteer_organisation = self.request.GET.get("organisation")
             resultset = resultset.filter(volunteer_organisation=volunteer_organisation)
@@ -206,6 +287,9 @@ class FormView(viewsets.ModelViewSet):
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
+    refresh["username"] = user.username
+    refresh["first_name"] = user.first_name
+    refresh["group"] = list(user.groups.values_list('name',flat=True))
     return {
         'refresh': str(refresh),
         'access': str(refresh.access_token),
@@ -220,7 +304,7 @@ class LoginView(APIView):
         username = data.get('username', None)
         password = data.get('password', None)
         user = authenticate(username=username, password=password)
-        print(user)
+
         if user is not None:
             if user.is_active:
                 data = get_tokens_for_user(user)
