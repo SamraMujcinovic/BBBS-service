@@ -27,5 +27,6 @@ router.register(r"activity-categories", views.ActivityCategoryView, basename="Ac
 urlpatterns = [
     url(r"^", include(router.urls)),
     path("login", views.LoginView.as_view(), name="login_view"),
+    path("login/refresh", views.CustomTokenRefreshView.as_view(), name="login_refresh_view"),
     path("logout", views.LogoutView.as_view(), name="logout_view"),
 ]

@@ -1,12 +1,15 @@
+from django.conf import settings
 from rest_framework import serializers
 from rest_framework_bulk import BulkSerializerMixin
 from django.core.mail import send_mail
 import strgen
+from rest_framework_simplejwt.exceptions import InvalidToken
 
-
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 
 from django.db.transaction import atomic
+from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .utilis import CURRENT_DATE, countDecimalPlaces, isUserAdmin
 
@@ -547,13 +550,12 @@ class FormSerializer(serializers.ModelSerializer):
         return serializer.data
 
 
-class LoginSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super(LoginSerializer, cls).get_token(user)
+class CustomTokenRefreshSerializer(TokenRefreshSerializer):
+    refresh = None
 
-        # Add custom claims
-        token["username"] = user.username
-        token["first_name"] = user.first_name
-        token["group"] = user.groups.all()
-        return token
+    def validate(self, attrs):
+        attrs['refresh'] = self.context['request'].COOKIES.get('refresh_token')
+        if attrs['refresh']:
+            return super().validate(attrs)
+        else:
+            raise InvalidToken('No valid token found in cookie\'refresh_token\'')

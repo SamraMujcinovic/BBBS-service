@@ -1,10 +1,14 @@
-from django.http import HttpResponse
-
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
     BlacklistedToken,
 )
+
+from rest_framework_simplejwt.views import (
+    TokenRefreshView,
+)
+
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from django.middleware import csrf
 from django.contrib.auth import authenticate
@@ -19,13 +23,11 @@ from rest_framework.response import Response
 
 from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
 
-from .authentication import CustomAuthentication
 # import local data
 from .serializers import (
     ChildSerializer,
     CoordinatorSerializer,
     FormSerializer,
-    LoginSerializer,
     VolunteerSerializer,
     Organisation_Serializer,
     City_Serializer,
@@ -34,7 +36,8 @@ from .serializers import (
     MentoringReasonCategorySerializer,
     HangOutPlaceSerializer,
     ActivitiesSerializer,
-    ActivityCategorySerializer
+    ActivityCategorySerializer,
+    CustomTokenRefreshSerializer
 )
 from .models import (
     Child,
@@ -52,10 +55,6 @@ from .models import (
     Activity_Category
 )
 from .utilis import isUserAdmin, isUserCoordinator, isUserVolunteer
-
-
-def index(request):
-    return HttpResponse("Hello, world. You're at the bbbs index.")
 
 
 class IsAdmin(BasePermission):
@@ -83,56 +82,56 @@ class IsVolunteer(BasePermission):
 
 
 class OrganisationView(viewsets.ModelViewSet):
-    authentication_classes = [CustomAuthentication]
+    authentication_classes = [JWTAuthentication]
     queryset = Organisation.objects.all()
     serializer_class = Organisation_Serializer
 
 
 class CityView(viewsets.ModelViewSet):
-    authentication_classes = [CustomAuthentication]
+    authentication_classes = [JWTAuthentication]
     queryset = City.objects.all()
     serializer_class = City_Serializer
 
 
 class DevelopmentalDifficultiesView(viewsets.ModelViewSet):
-    authentication_classes = [CustomAuthentication]
+    authentication_classes = [JWTAuthentication]
     queryset = Developmental_Difficulties.objects.all()
     serializer_class = Developmental_DifficultiesSerializer
 
 
 class MentoringReasonView(viewsets.ModelViewSet):
-    authentication_classes = [CustomAuthentication]
+    authentication_classes = [JWTAuthentication]
     queryset = Mentoring_Reason.objects.all()
     serializer_class = MentoringReasonSerializer
 
 
 class MentoringReasonCategoryView(viewsets.ModelViewSet):
-    authentication_classes = [CustomAuthentication]
+    authentication_classes = [JWTAuthentication]
     queryset = Mentoring_Reason_Category.objects.all()
     serializer_class = MentoringReasonCategorySerializer
 
 
 class HangOutPlaceView(viewsets.ModelViewSet):
-    authentication_classes = [CustomAuthentication]
+    authentication_classes = [JWTAuthentication]
     queryset = Hang_Out_Place.objects.all()
     serializer_class = HangOutPlaceSerializer
 
 
 class ActivitiesView(viewsets.ModelViewSet):
-    authentication_classes = [CustomAuthentication]
+    authentication_classes = [JWTAuthentication]
     queryset = Activities.objects.all()
     serializer_class = ActivitiesSerializer
 
 
 class ActivityCategoryView(viewsets.ModelViewSet):
-    authentication_classes = [CustomAuthentication]
+    authentication_classes = [JWTAuthentication]
     queryset = Activity_Category.objects.all()
     serializer_class = ActivityCategorySerializer
 
 
 # create a viewset
 class CoordinatorView(viewsets.ModelViewSet):
-    authentication_classes = [CustomAuthentication]
+    authentication_classes = [JWTAuthentication]
     def get_permissions(self):
         permission_classes = []
         if self.action == "create":
@@ -164,7 +163,7 @@ class CoordinatorView(viewsets.ModelViewSet):
 
 # create a viewset
 class VolunteerView(viewsets.ModelViewSet):
-    authentication_classes = [CustomAuthentication]
+    authentication_classes = [JWTAuthentication]
     # define queryset
     def get_queryset(self):
         user = self.request.user
@@ -215,7 +214,7 @@ class VolunteerView(viewsets.ModelViewSet):
 
 # create a viewset
 class ChildView(viewsets.ModelViewSet):
-    authentication_classes = [CustomAuthentication]
+    authentication_classes = [JWTAuthentication]
     # define queryset
     def get_queryset(self):
         user = self.request.user
@@ -255,7 +254,7 @@ class ChildView(viewsets.ModelViewSet):
 
 # create a viewset
 class FormView(viewsets.ModelViewSet):
-    authentication_classes = [CustomAuthentication]
+    authentication_classes = [JWTAuthentication]
     # define queryset
     def get_queryset(self):
         user = self.request.user
@@ -297,7 +296,7 @@ def get_tokens_for_user(user):
 
 
 class LoginView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = (AllowAny,)
     def post(self, request, format=None):
         data = request.data
         response = Response()
@@ -310,13 +309,13 @@ class LoginView(APIView):
                 data = get_tokens_for_user(user)
                 response.set_cookie(
                     key=settings.SIMPLE_JWT['AUTH_COOKIE'],
-                    value=data["access"],
-                    expires=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
+                    value=data["refresh"],
+                    expires=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
                     httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
                     samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
                 )
                 csrf.get_token(request)
-                response.data = {"Success": "Login successfully", "data": data}
+                response.data = {"Success": "Login successfully", "data": data["access"]}
                 return response
             else:
                 return Response({"No active": "This account is not active!!"}, status=status.HTTP_404_NOT_FOUND)
@@ -324,8 +323,14 @@ class LoginView(APIView):
             return Response({"Invalid": "Invalid username or password!!"}, status=status.HTTP_404_NOT_FOUND)
 
 
+class CustomTokenRefreshView(TokenRefreshView):
+    permission_classes = [AllowAny]
+    serializer_class = CustomTokenRefreshSerializer
+
+
 class LogoutView(APIView):
-    permission_classes = (IsAuthenticated,)
+    authentication_classes = [JWTAuthentication,]
+    permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
         if self.request.data.get("all"):
