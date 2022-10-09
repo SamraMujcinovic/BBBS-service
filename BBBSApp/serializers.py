@@ -1,15 +1,12 @@
-from django.conf import settings
 from rest_framework import serializers
 from rest_framework_bulk import BulkSerializerMixin
 from django.core.mail import send_mail
 import strgen
 from rest_framework_simplejwt.exceptions import InvalidToken
 
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from django.db.transaction import atomic
-from rest_framework_simplejwt.settings import api_settings
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from .utilis import CURRENT_DATE, countDecimalPlaces, isUserAdmin
 

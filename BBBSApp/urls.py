@@ -29,4 +29,6 @@ urlpatterns = [
     path("login", views.LoginView.as_view(), name="login_view"),
     path("login/refresh", views.CustomTokenRefreshView.as_view(), name="login_refresh_view"),
     path("logout", views.LogoutView.as_view(), name="logout_view"),
+    path("password", views.PasswordChangeView.as_view(), name="password_change_view"),
+    path("password/reset", views.PasswordResetView.as_view(), name="password_reset_view"),
 ]

@@ -1,3 +1,5 @@
+import strgen
+from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
@@ -14,6 +16,7 @@ from django.middleware import csrf
 from django.contrib.auth import authenticate
 from django.conf import settings
 from rest_framework import status
+from django.contrib.auth.hashers import check_password
 
 # import viewsets
 from rest_framework import viewsets
@@ -54,6 +57,8 @@ from .models import (
     Activities,
     Activity_Category
 )
+from django.contrib.auth.models import User
+
 from .utilis import isUserAdmin, isUserCoordinator, isUserVolunteer
 
 
@@ -342,3 +347,56 @@ class LogoutView(APIView):
         token = RefreshToken(token=refresh_token)
         token.blacklist()
         return Response({"status": "OK, goodbye"})
+
+
+class PasswordChangeView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        print(request.data.get("newPassword", None))
+        if request.data.get("newPassword", None) is None or request.data.get("oldPassword", None) is None:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        current_user = request.user
+
+        if not check_password(request.data.get("oldPassword"), current_user.password):
+            return Response({"oldPassword": "Invalid!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        current_user.set_password(request.data.get("newPassword"))
+        current_user.save()
+
+        return Response(status=status.HTTP_200_OK)
+
+
+class PasswordResetView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        if request.data.get("email", None) is None:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(username=request.data.get("email")).first()
+        if user is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        random_password = strgen.StringGenerator("[\w\d]{10}").render()
+        user.set_password(random_password)
+        user.save()
+        email_message = (
+                "Welcome to the BBBS Organisation. Your password is successfully refreshed.\nHere you can find your credientials for app access. \n Username: "
+                + user.username
+                + "\n Password: "
+                + random_password
+        )
+
+        send_mail(
+            "Password refresh",
+            email_message,
+            None,
+            [user.email],
+            fail_silently=False,
+        )
+        return Response(status=status.HTTP_200_OK)
+
+
