@@ -293,6 +293,7 @@ def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     refresh["username"] = user.username
     refresh["first_name"] = user.first_name
+    refresh["last_name"] = user.last_name
     refresh["group"] = list(user.groups.values_list('name',flat=True))
     return {
         'refresh': str(refresh),

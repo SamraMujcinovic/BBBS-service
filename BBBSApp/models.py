@@ -72,7 +72,7 @@ class Volunteer(models.Model):
     )
     phone_number = models.CharField(validators=[PHONE_REGEX], max_length=9, null=True)
     education_level = models.CharField(choices=EDUCATION_LEVEL, max_length=15)
-    faculty_department = models.TextField(null=True)
+    faculty_department = models.TextField(null=True, blank=True)
     employment_status = models.CharField(choices=EMPLOYMENT_STATUS, max_length=15)
     good_conduct_certificate = models.BooleanField()
     status = models.BooleanField()
