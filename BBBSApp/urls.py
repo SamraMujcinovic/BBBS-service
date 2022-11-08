@@ -11,14 +11,17 @@ router.register(r"mentoring-reasons", views.MentoringReasonView, basename="Mento
 router.register(r"mentoring-reasons-categories", views.MentoringReasonCategoryView, basename="Mentoring_Reason_Category")
 router.register(r"developmental-difficulties", views.DevelopmentalDifficultiesView, basename="Developmental_Difficulties")
 router.register(r"coordinators", views.CoordinatorView, basename="Coordinator")
+router.register(r"coordinators/<int:pk>/", views.CoordinatorView, basename="Coordinator")
 router.register(r"volunteers", views.VolunteerView, basename="Volunteer")
+router.register(r"volunteers/<int:pk>/", views.VolunteerView, basename="Volunteer")
 router.register(
-    r"volunteers/(?P<status>.+)/(?P<organisation>.+)/(?P<city>.+)/(?P<coordinator>.+)/(?P<gender>.+)", views.VolunteerView, basename="Volunteer"
+    r"volunteers/(?P<status>.+)/(?P<organisation>.+)/(?P<city>.+)/(?P<coordinator>.+)/(?P<gender>.+)/(?P<child>.+)", views.VolunteerView, basename="Volunteer"
 )
 router.register(r"childs", views.ChildView, basename="Child")
 router.register(
-    r"childs/(?P<organisation>.+)/(?P<city>.+)", views.ChildView, basename="Child"
+    r"childs/<int:pk>/", views.ChildView, basename="Child"
 )
+router.register(r"childs", views.ChildView, basename="Child")
 router.register(r"forms", views.FormView, basename="Form")
 router.register(r"places", views.HangOutPlaceView, basename="Hang_Out_Place")
 router.register(r"activities", views.ActivitiesView, basename="Activities")

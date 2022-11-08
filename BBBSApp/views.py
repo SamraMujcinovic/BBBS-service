@@ -184,6 +184,7 @@ class VolunteerView(viewsets.ModelViewSet):
             resultset = Volunteer.objects.filter(
                 volunteer_organisation=coordinator_organisation_city.organisation_id,
                 volunteer_city=coordinator_organisation_city.city_id,
+                coordinator=coordinator.id
             )
         if isUserVolunteer(user):
             resultset = Volunteer.objects.filter(user_id=user.id)
@@ -203,6 +204,13 @@ class VolunteerView(viewsets.ModelViewSet):
         if self.request.GET.get("coordinator") is not None:
             coordinator = self.request.GET.get("coordinator")
             resultset = resultset.filter(coordinator=coordinator)
+        if self.request.GET.get("child") is not None:
+            child_volunteer = Volunteer.objects.filter(child=self.request.GET.get("child"))
+            if child_volunteer.first() is not None:
+                if isUserCoordinator(user):
+                    resultset = resultset | child_volunteer
+                elif child_volunteer.first().coordinator.id == int(self.request.GET.get("coordinator")) and child_volunteer.first().gender == self.request.GET.get("gender"):
+                    resultset = resultset | child_volunteer
         return resultset.order_by('user__first_name', 'user__last_name')
 
     def get_permissions(self):
@@ -235,6 +243,7 @@ class ChildView(viewsets.ModelViewSet):
             resultset = Child.objects.filter(
                 child_organisation=coordinator_organisation_city.organisation_id,
                 child_city=coordinator_organisation_city.city_id,
+                coordinator=coordinator.id
             )
 
         if self.request.GET.get("organisation") is not None:

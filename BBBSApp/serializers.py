@@ -138,7 +138,7 @@ class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):
 
         organisation_name = (list(validated_data["coordinator_organisation"][0].items())[0])[1]
         city_name = (list(validated_data["coordinator_city"][0].items())[0])[1]
-        print(organisation_name)
+
         organisation_city = Coordinator_Organisation_City.objects.create(
             organisation=Organisation.objects.get(name=organisation_name),
             city=City.objects.get(name=city_name),
@@ -151,6 +151,27 @@ class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):
         coordinator_group.user_set.add(new_user)
 
         return new_coordinator
+
+    def update(self, instance, validated_data):
+        user = instance.user
+        user.first_name = validated_data["user"]["first_name"]
+        user.last_name = validated_data["user"]["last_name"]
+        user.save()
+
+        organisation_name = (list(validated_data["coordinator_organisation"][0].items())[0])[1]
+        city_name = (list(validated_data["coordinator_city"][0].items())[0])[1]
+        organisation = Organisation.objects.filter(name=organisation_name).first()
+        city = City.objects.filter(name=city_name).first()
+
+        organisation_city = Coordinator_Organisation_City.objects.filter(
+            coordinator_id=instance.id,
+        ).first()
+        organisation_city.organisation = organisation
+        organisation_city.city = city
+        organisation_city.save()
+
+        instance.save()
+        return instance
 
 
 class VolunteerSerializer(serializers.ModelSerializer):
@@ -241,6 +262,50 @@ class VolunteerSerializer(serializers.ModelSerializer):
         new_volunteer.save()
 
         return new_volunteer
+
+    def update(self, instance, validated_data):
+        user = instance.user
+        user.first_name = validated_data["user"]["first_name"]
+        user.last_name = validated_data["user"]["last_name"]
+        user.save()
+
+        instance.birth_year = validated_data["birth_year"]
+        instance.phone_number = validated_data["phone_number"]
+        instance.education_level = validated_data["education_level"]
+        instance.faculty_department = validated_data["faculty_department"]
+        instance.employment_status = validated_data["employment_status"]
+        instance.good_conduct_certificate = validated_data["good_conduct_certificate"]
+        instance.status = validated_data["status"]
+
+        current_user = self.context["request"].user
+        if isUserAdmin(current_user):
+            # allow admin users to choose coordinator
+            coordinator = validated_data["coordinator"]
+            instance.coordinator = coordinator
+
+            organisation_city = Volunteer_Organisation_City.objects.filter(volunteer_id=instance.id).first()
+            organisation_city.organisation = coordinator.coordinator_organisation.first()
+            organisation_city.city = coordinator.coordinator_city.first()
+            organisation_city.save()
+
+            try:
+                volunteer_child = instance.child
+            except:
+                volunteer_child = None
+            if volunteer_child is not None:
+                if volunteer_child.child_organisation != organisation_city.organisation or \
+                        volunteer_child.child_city != organisation_city.city or \
+                        volunteer_child.coordinator != int(validated_data["coordinator"]):
+                    # if volunteers organisation or city changed, remove child from that volunteer
+                    instance.child = None
+                    instance.status = False
+                    volunteer_child.volunteer = None
+                    volunteer_child.status = False
+                    volunteer_child.save()
+
+        instance.save()
+        return instance
+
 
     def get(self, pk):
         volunteer_details = Volunteer.objects.get(pk=pk)
@@ -380,13 +445,34 @@ class ChildSerializer(serializers.ModelSerializer):
         return serializer.data
 
     def update(self, instance, validated_data):
+        instance.birth_year = validated_data["birth_year"]
+        instance.school_status = validated_data["school_status"]
+        instance.developmental_difficulties.set(validated_data["developmental_difficulties"])
+        instance.family_model = validated_data["family_model"]
+        instance.mentoring_reason.set(validated_data["mentoring_reason"])
+        instance.guardian_consent = validated_data["guardian_consent"]
+
+        # set coordinator
+        current_user = self.context["request"].user
+        if isUserAdmin(current_user): # if coordinator is editing the data, keep current coordinator
+            # allow admin to choose organisation and city for child
+            coordinator = validated_data.get("coordinator", None)
+            instance.coordinator = coordinator
+
+            organisation_city = Child_Organisation_City.objects.filter(child_id=instance.id).first()
+            organisation_city.organisation = coordinator.coordinator_organisation.first()
+            organisation_city.city = coordinator.coordinator_city.first()
+            organisation_city.save()
+
+
+        # update child's volunteer
         old_volunteer = None
         new_volunteer = None
         if instance.volunteer is not None:
             old_volunteer = Volunteer.objects.get(id=instance.volunteer.id)
-        if validated_data.get('volunteer', instance.volunteer) is not None:
-            new_volunteer = Volunteer.objects.get(id=validated_data.get('volunteer', instance.volunteer).id)
-        instance.volunteer = validated_data.get('volunteer', instance.volunteer)
+        if validated_data.get('volunteer', None) is not None:
+            new_volunteer = Volunteer.objects.get(id=validated_data.get('volunteer', None).id)
+        instance.volunteer = validated_data.get('volunteer', None)
 
         if old_volunteer is not None:
             old_volunteer.status = False

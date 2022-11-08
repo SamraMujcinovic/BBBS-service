@@ -76,7 +76,7 @@ class Volunteer(models.Model):
     employment_status = models.CharField(choices=EMPLOYMENT_STATUS, max_length=15)
     good_conduct_certificate = models.BooleanField()
     status = models.BooleanField()
-    coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.DO_NOTHING)
+    coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.CASCADE)
     volunteer_organisation = models.ManyToManyField(
         "Organisation",
         through="Volunteer_Organisation_City",
@@ -108,7 +108,7 @@ class Mentoring_Reason_Category(models.Model):
 
 class Mentoring_Reason(models.Model):
     name = models.CharField(max_length=70)
-    category = models.ForeignKey(Mentoring_Reason_Category, on_delete=models.DO_NOTHING)
+    category = models.ForeignKey(Mentoring_Reason_Category, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name + "(" + str(self.category) + ")"
@@ -140,8 +140,8 @@ class Child(models.Model):
     )
 
     code = models.CharField(max_length=8)
-    first_name = models.CharField(max_length=10)
-    last_name = models.CharField(max_length=15)
+    first_name = models.CharField(max_length=10, blank=True)
+    last_name = models.CharField(max_length=15, blank=True)
     gender = models.CharField(choices=GENDER, max_length=1)
     birth_year = models.PositiveIntegerField(
         validators=[MinValueValidator(1950), MaxValueValidator(CURRENT_DATE.year)],
@@ -153,15 +153,15 @@ class Child(models.Model):
     mentoring_reason = models.ManyToManyField(Mentoring_Reason)
     status = models.BooleanField()
     guardian_consent = models.BooleanField()
-    coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.DO_NOTHING)
+    coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.CASCADE)
     volunteer = models.OneToOneField(
-        Volunteer, on_delete=models.DO_NOTHING, null=True  # check what to do on delete
+        Volunteer, on_delete=models.CASCADE, null=True  # check what to do on delete
     )
     child_organisation = models.ManyToManyField(
         "Organisation",
         through="Child_Organisation_City",
         related_name="child_organisation",
-        blank=True
+        blank=True,
     )
     child_city = models.ManyToManyField(
         "City", through="Child_Organisation_City", related_name="child_city", blank=True
@@ -175,27 +175,27 @@ class Child(models.Model):
 
 
 class Coordinator_Organisation_City(models.Model):
-    coordinator = models.ForeignKey(Coordinator, on_delete=models.DO_NOTHING, null=True)
+    coordinator = models.ForeignKey(Coordinator, on_delete=models.CASCADE, null=True)
     organisation = models.ForeignKey(
-        Organisation, on_delete=models.DO_NOTHING, null=True
+        Organisation, on_delete=models.CASCADE, null=True
     )
-    city = models.ForeignKey(City, on_delete=models.DO_NOTHING, null=True)
+    city = models.ForeignKey(City, on_delete=models.CASCADE, null=True)
 
 
 class Volunteer_Organisation_City(models.Model):
-    volunteer = models.ForeignKey(Volunteer, on_delete=models.DO_NOTHING, null=True)
+    volunteer = models.ForeignKey(Volunteer, on_delete=models.CASCADE, null=True)
     organisation = models.ForeignKey(
-        Organisation, on_delete=models.DO_NOTHING, null=True
+        Organisation, on_delete=models.CASCADE, null=True
     )
-    city = models.ForeignKey(City, on_delete=models.DO_NOTHING, null=True)
+    city = models.ForeignKey(City, on_delete=models.CASCADE, null=True)
 
 
 class Child_Organisation_City(models.Model):
-    child = models.ForeignKey(Child, on_delete=models.DO_NOTHING, null=True)
+    child = models.ForeignKey(Child, on_delete=models.CASCADE, null=True)
     organisation = models.ForeignKey(
-        Organisation, on_delete=models.DO_NOTHING, null=True
+        Organisation, on_delete=models.CASCADE, null=True
     )
-    city = models.ForeignKey(City, on_delete=models.DO_NOTHING, null=True)
+    city = models.ForeignKey(City, on_delete=models.CASCADE, null=True)
 
 
 class Hang_Out_Place(models.Model):
@@ -215,7 +215,7 @@ class Activity_Category(models.Model):
 class Activities(models.Model):
     name = models.CharField(max_length=80)
     activity_category = models.ForeignKey(
-        Activity_Category, on_delete=models.DO_NOTHING
+        Activity_Category, on_delete=models.CASCADE
     )
 
     def __str__(self):
@@ -250,4 +250,4 @@ class Form(models.Model):
     evaluation = models.PositiveSmallIntegerField(choices=EVALUATION)
     activities = models.ManyToManyField(Activities)
     description = models.TextField(max_length=500, null=True, blank=True)
-    volunteer = models.ForeignKey(Volunteer, on_delete=models.DO_NOTHING, null=False)
+    volunteer = models.ForeignKey(Volunteer, on_delete=models.CASCADE, null=False)
