@@ -150,7 +150,7 @@ class CoordinatorView(viewsets.ModelViewSet):
         user = self.request.user
         resultset = []
         if isUserAdmin(user):
-            resultset = Coordinator.objects.all().order_by('user__first_name', 'user__last_name')
+            resultset = Coordinator.objects.all().order_by('coordinator_organisation', 'coordinator_city', 'user__first_name', 'user__last_name')
             if self.request.GET.get("organisation") is not None:
                 coordinator_organisation = self.request.GET.get("organisation")
                 resultset = resultset.filter(coordinator_organisation=coordinator_organisation)
@@ -185,7 +185,7 @@ class VolunteerView(viewsets.ModelViewSet):
                 volunteer_organisation=coordinator_organisation_city.organisation_id,
                 volunteer_city=coordinator_organisation_city.city_id,
                 coordinator=coordinator.id
-            )
+            ).order_by('user__first_name', 'user__last_name')
         if isUserVolunteer(user):
             resultset = Volunteer.objects.filter(user_id=user.id)
 
@@ -206,12 +206,13 @@ class VolunteerView(viewsets.ModelViewSet):
             resultset = resultset.filter(coordinator=coordinator)
         if self.request.GET.get("child") is not None:
             child_volunteer = Volunteer.objects.filter(child=self.request.GET.get("child"))
+            # add current childs volunteer to list of accessible volunteers
             if child_volunteer.first() is not None:
                 if isUserCoordinator(user):
                     resultset = resultset | child_volunteer
                 elif child_volunteer.first().coordinator.id == int(self.request.GET.get("coordinator")) and child_volunteer.first().gender == self.request.GET.get("gender"):
                     resultset = resultset | child_volunteer
-        return resultset.order_by('user__first_name', 'user__last_name')
+        return resultset.order_by('volunteer_organisation', 'volunteer_city', 'user__first_name', 'user__last_name')
 
     def get_permissions(self):
         permission_classes = []
@@ -252,7 +253,7 @@ class ChildView(viewsets.ModelViewSet):
         if self.request.GET.get("city") is not None:
             child_city = self.request.GET.get("city")
             resultset = resultset.filter(child_city=child_city)
-        return resultset
+        return resultset.order_by('child_organisation', 'child_city', 'code')
 
     def get_permissions(self):
         permission_classes = []
@@ -273,7 +274,7 @@ class FormView(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if isUserAdmin(user):
-            return Form.objects.all()
+            return Form.objects.all().order_by("-date", 'volunteer__volunteer_organisation', 'volunteer__volunteer_city')
         if isUserCoordinator(user):
             # allow coordinators to see forms of his volunteer
             coordinator = Coordinator.objects.get(user_id=user.id)

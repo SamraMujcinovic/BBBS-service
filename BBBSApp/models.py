@@ -47,7 +47,7 @@ class Volunteer(models.Model):
     MSc = "MSc"
     Dr = "Dr"
     EDUCATION_LEVEL = (
-        (SSS, "Srednja skola"),
+        (SSS, "Srednja škola"),
         (BSc, "Bachelor"),
         (MSc, "Master"),
         (Dr, "Doktor nauka"),
@@ -233,12 +233,10 @@ class Form(models.Model):
     )
 
     BAD = 0
-    NOT_BAD = 1
-    GOOD = 2
-    GREAT = 3
+    GOOD = 1
+    GREAT = 2
     EVALUATION = (
         (BAD, "Loše"),
-        (NOT_BAD, "Nije loše"),
         (GOOD, "Dobro"),
         (GREAT, "Super"),
     )
@@ -250,4 +248,5 @@ class Form(models.Model):
     evaluation = models.PositiveSmallIntegerField(choices=EVALUATION)
     activities = models.ManyToManyField(Activities)
     description = models.TextField(max_length=500, null=True, blank=True)
+    child = models.CharField(max_length=10)
     volunteer = models.ForeignKey(Volunteer, on_delete=models.CASCADE, null=False)
