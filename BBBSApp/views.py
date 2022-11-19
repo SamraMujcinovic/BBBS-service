@@ -26,6 +26,7 @@ from rest_framework.response import Response
 
 from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
 
+from .pagination import CustomPagination
 # import local data
 from .serializers import (
     ChildSerializer,
@@ -137,6 +138,7 @@ class ActivityCategoryView(viewsets.ModelViewSet):
 # create a viewset
 class CoordinatorView(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
+    pagination_class = CustomPagination
     def get_permissions(self):
         permission_classes = []
         if self.action == "create":
@@ -169,6 +171,7 @@ class CoordinatorView(viewsets.ModelViewSet):
 # create a viewset
 class VolunteerView(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
+    pagination_class = CustomPagination
     # define queryset
     def get_queryset(self):
         user = self.request.user
@@ -229,6 +232,7 @@ class VolunteerView(viewsets.ModelViewSet):
 # create a viewset
 class ChildView(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
+    pagination_class = CustomPagination
     # define queryset
     def get_queryset(self):
         user = self.request.user
@@ -270,6 +274,7 @@ class ChildView(viewsets.ModelViewSet):
 # create a viewset
 class FormView(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
+    pagination_class = CustomPagination
     # define queryset
     def get_queryset(self):
         user = self.request.user
