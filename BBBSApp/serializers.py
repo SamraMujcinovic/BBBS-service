@@ -61,7 +61,7 @@ def saveUser(validated_data):
         first_name=validated_data["user"]["first_name"],
         last_name=validated_data["user"]["last_name"],
         email=validated_data["user"]["email"],
-        # set email as username (can be cahnged later),
+        # set email as username (can be changed later),
         # but User model has to have username!!
         # https://stackoverflow.com/questions/32455744/set-optional-username-django-user#:~:text=auth%20you%20can't%20make,create%20a%20username%20from%20email.
         username=validated_data["user"]["email"],
@@ -71,14 +71,14 @@ def saveUser(validated_data):
     newUser.save()
 
     emailMessage = (
-        "Welcome to the BBBS Organisation. Here you can find your credientials for app access. \n Username: "
+        "Welcome to the BBBS Organisation. Here you can find your credentials for app access.\nUsername: "
         + newUser.username
-        + "\n Password: "
+        + "\nPassword: "
         + random_password
     )
 
     send_mail(
-        "User credientials",
+        "User credentials",
         emailMessage,
         None,
         [newUser.email],
@@ -341,7 +341,7 @@ class ChildSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Child
-        read_only_fields = ("id", "code", "status")
+        read_only_fields = ("id", "code")
         fields = (
             "id",
             "first_name",
@@ -403,7 +403,7 @@ class ChildSerializer(serializers.ModelSerializer):
             family_model=family_model,
             status=volunteer is not None,
             guardian_consent=guardian_consent,
-            volunteer=volunteer
+            volunteer=volunteer,
         )
         new_child.save()
 
@@ -451,6 +451,7 @@ class ChildSerializer(serializers.ModelSerializer):
         instance.family_model = validated_data["family_model"]
         instance.mentoring_reason.set(validated_data["mentoring_reason"])
         instance.guardian_consent = validated_data["guardian_consent"]
+        instance.status = validated_data["status"]
 
         # set coordinator
         current_user = self.context["request"].user
@@ -473,6 +474,11 @@ class ChildSerializer(serializers.ModelSerializer):
         if validated_data.get('volunteer', None) is not None:
             new_volunteer = Volunteer.objects.get(id=validated_data.get('volunteer', None).id)
         instance.volunteer = validated_data.get('volunteer', None)
+
+        if instance.volunteer is not None:
+            instance.status = True
+        else:
+            instance.status = False
 
         if old_volunteer is not None:
             old_volunteer.status = False
