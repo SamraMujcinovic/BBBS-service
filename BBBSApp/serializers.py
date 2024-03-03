@@ -636,6 +636,15 @@ class FormSerializer(serializers.ModelSerializer):
         return serializer.data
 
 
+class VolunteerHoursSerializer(serializers.Serializer):
+    volunteer_user_id = serializers.IntegerField()
+    volunteer_first_name = serializers.CharField()
+    volunteer_last_name = serializers.CharField()
+    volunteer_organisation = serializers.CharField()
+    volunteer_city = serializers.CharField()
+    volunteer_hours = serializers.FloatField()
+
+
 class CustomTokenRefreshSerializer(TokenRefreshSerializer):
     refresh = None
 

@@ -33,6 +33,7 @@ from .serializers import (
     CoordinatorSerializer,
     FormSerializer,
     VolunteerSerializer,
+    VolunteerHoursSerializer,
     Organisation_Serializer,
     City_Serializer,
     MentoringReasonSerializer,
@@ -43,6 +44,7 @@ from .serializers import (
     ActivityCategorySerializer,
     CustomTokenRefreshSerializer
 )
+from django.db.models import Sum, F
 from .models import (
     Child,
     Coordinator,
@@ -302,6 +304,67 @@ class FormView(viewsets.ModelViewSet):
 
     # specify serializer to be used
     serializer_class = FormSerializer
+
+
+class VolunteerHours(viewsets.ModelViewSet):
+    authentication_classes = [JWTAuthentication]
+    pagination_class = CustomPagination
+    # define queryset
+    def get_queryset(self):
+        user = self.request.user
+        start_date = self.request.GET.get("startDate")
+        end_date = self.request.GET.get("endDate")
+        if isUserAdmin(user):
+            return (Form
+                    .objects
+                    .filter(date__range=[start_date, end_date])
+                    .values(
+                        volunteer_user_id=F('volunteer__user_id'),
+                        volunteer_first_name=F('volunteer__user__first_name'),
+                        volunteer_last_name=F('volunteer__user__last_name'),
+                        volunteer_organisation=F('volunteer__volunteer_organisation__name'),
+                        volunteer_city=F('volunteer__volunteer_city__name')
+                    )
+                    .annotate(volunteer_hours=Sum('duration'))
+                    .order_by('volunteer__user__first_name'))
+        elif isUserCoordinator(user):
+            coordinator = Coordinator.objects.get(user_id=user.id)
+            return (Form
+                    .objects
+                    .filter(volunteer__coordinator_id=coordinator.id, date__range=[start_date, end_date])
+                    .values(
+                            volunteer_user_id=F('volunteer__user_id'),
+                            volunteer_first_name=F('volunteer__user__first_name'),
+                            volunteer_last_name=F('volunteer__user__last_name'),
+                            volunteer_organisation=F('volunteer__volunteer_organisation__name'),
+                            volunteer_city=F('volunteer__volunteer_city__name')
+                    )
+                    .annotate(volunteer_hours=Sum('duration'))
+                    .order_by('volunteer__user__first_name'))
+        elif isUserVolunteer(user):
+            volunteer = Volunteer.objects.get(user_id=user.id)
+            return (Form
+                    .objects
+                    .filter(volunteer=volunteer.id, date__range=[start_date, end_date])
+                    .values(
+                            volunteer_user_id=F('volunteer__user_id'),
+                            volunteer_first_name=F('volunteer__user__first_name'),
+                            volunteer_last_name=F('volunteer__user__last_name'),
+                            volunteer_organisation=F('volunteer__volunteer_organisation__name'),
+                            volunteer_city=F('volunteer__volunteer_city__name')
+                    )
+                    .annotate(volunteer_hours=Sum('duration'))
+                    .order_by('volunteer__user__first_name'))
+        return None
+
+    def get_permissions(self):
+        permission_classes = []
+        if self.action == "list":
+            permission_classes = [IsAdmin | IsCoordinator | IsVolunteer]
+        return [permission() for permission in permission_classes]
+
+    # specify serializer to be used
+    serializer_class = VolunteerHoursSerializer
 
 
 def get_tokens_for_user(user):

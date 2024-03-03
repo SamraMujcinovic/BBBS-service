@@ -17,6 +17,8 @@ router.register(r"volunteers/<int:pk>/", views.VolunteerView, basename="Voluntee
 router.register(
     r"volunteers/(?P<status>.+)/(?P<organisation>.+)/(?P<city>.+)/(?P<coordinator>.+)/(?P<gender>.+)/(?P<child>.+)", views.VolunteerView, basename="Volunteer"
 )
+router.register(r"hours", views.VolunteerHours, basename="Volunteer_Hours")
+
 router.register(r"childs", views.ChildView, basename="Child")
 router.register(
     r"childs/<int:pk>/", views.ChildView, basename="Child"
