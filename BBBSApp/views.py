@@ -1,3 +1,6 @@
+import calendar
+from datetime import datetime
+
 import strgen
 from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -471,6 +474,39 @@ class PasswordResetView(APIView):
 
         send_mail(
             "Password refresh",
+            email_message,
+            None,
+            [user.email],
+            fail_silently=False,
+        )
+        return Response(status=status.HTTP_200_OK)
+
+
+class EmailRemindersView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        monthAndYear = datetime.strptime(request.data.get("monthAndYear", None), '%Y-%m-%d')
+        startDate = monthAndYear
+        endDate = datetime(monthAndYear.year, monthAndYear.month, calendar.monthrange(startDate.year, startDate.month)[1])
+
+        if request.data.get("volunteer_user_id", None) is None or monthAndYear is None:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(id=request.data.get("volunteer_user_id")).first()
+        if user is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        email_message = (
+                "Poštovani,\n\nVaši sati za period od "
+                + startDate.strftime("%d.%m.%Y")
+                + " do "
+                + endDate.strftime("%d.%m.%Y")
+                + " nisu dovoljni. Minimalan broj sati u mjesecu je 16. Molimo Vas da unesete preostale sate.\n\nUnaprijed zahvaljujemo!"
+        )
+
+        send_mail(
+            "Podsjetnik za unos sati",
             email_message,
             None,
             [user.email],

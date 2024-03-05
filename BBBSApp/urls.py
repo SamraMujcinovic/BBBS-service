@@ -36,4 +36,5 @@ urlpatterns = [
     path("logout", views.LogoutView.as_view(), name="logout_view"),
     path("password", views.PasswordChangeView.as_view(), name="password_change_view"),
     path("password/reset", views.PasswordResetView.as_view(), name="password_reset_view"),
+    path("reminders", views.EmailRemindersView.as_view(), name="reminder_emails")
 ]
