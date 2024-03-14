@@ -282,20 +282,7 @@ class FormView(viewsets.ModelViewSet):
     pagination_class = CustomPagination
     # define queryset
     def get_queryset(self):
-        user = self.request.user
-        if isUserAdmin(user):
-            return Form.objects.all().order_by("-date", 'volunteer__volunteer_organisation', 'volunteer__volunteer_city')
-        if isUserCoordinator(user):
-            # allow coordinators to see forms of his volunteer
-            coordinator = Coordinator.objects.get(user_id=user.id)
-            return Form.objects.filter(
-                volunteer__coordinator_id=coordinator.id
-            ).order_by("-date")
-        if isUserVolunteer(user):
-            # allow volunteers to see his forms
-            volunteer = Volunteer.objects.get(user_id=user.id)
-            return Form.objects.filter(volunteer=volunteer.id).order_by("-date")
-        return None
+        return get_accessible_forms(self.request.user)
 
     def get_permissions(self):
         permission_classes = []
@@ -307,6 +294,22 @@ class FormView(viewsets.ModelViewSet):
 
     # specify serializer to be used
     serializer_class = FormSerializer
+
+
+def get_accessible_forms(current_user):
+    if isUserAdmin(current_user):
+        return Form.objects.all().order_by("-date", 'volunteer__volunteer_organisation', 'volunteer__volunteer_city')
+    if isUserCoordinator(current_user):
+        # allow coordinators to see forms of his volunteer
+        coordinator = Coordinator.objects.get(user_id=current_user.id)
+        return Form.objects.filter(
+            volunteer__coordinator_id=coordinator.id
+        ).order_by("-date")
+    if isUserVolunteer(current_user):
+        # allow volunteers to see his forms
+        volunteer = Volunteer.objects.get(user_id=current_user.id)
+        return Form.objects.filter(volunteer=volunteer.id).order_by("-date")
+    return None
 
 
 class VolunteerHours(viewsets.ModelViewSet):
@@ -368,6 +371,15 @@ class VolunteerHours(viewsets.ModelViewSet):
 
     # specify serializer to be used
     serializer_class = VolunteerHoursSerializer
+
+
+class FormsTotalHoursSumView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        accessible_forms = get_accessible_forms(request.user)
+        return None if accessible_forms is None else Response(data=accessible_forms.aggregate(totalHours=Sum('duration')), status=status.HTTP_200_OK)
 
 
 def get_tokens_for_user(user):
