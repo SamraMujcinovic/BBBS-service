@@ -478,14 +478,14 @@ class PasswordResetView(APIView):
         user.set_password(random_password)
         user.save()
         email_message = (
-                "Welcome to the BBBS Organisation. Your password is successfully refreshed.\nHere you can find your credientials for app access. \n Username: "
+                "Dobrodošli u organizaciju 'Stariji brat, starija sestra'.\n\nVaša lozinka je uspješno oporavljena. U nastavku E-maila možete pronaći nove pristupne podatke.\n\nKorisničko ime: "
                 + user.username
-                + "\n Password: "
+                + "\nLozinka: "
                 + random_password
         )
 
         send_mail(
-            "Password refresh",
+            "Oporavak lozinke",
             email_message,
             None,
             [user.email],

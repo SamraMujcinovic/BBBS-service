@@ -71,14 +71,14 @@ def saveUser(validated_data):
     newUser.save()
 
     emailMessage = (
-        "Welcome to the BBBS Organisation. Here you can find your credentials for app access.\nUsername: "
+        "Dobrodošli u organizaciju 'Stariji brat, starija sestra'.\n\nU nastavku E-maila možete pronaći svoje pristupne podatke.\n\nKorisničko ime: "
         + newUser.username
-        + "\nPassword: "
+        + "\nLozinka: "
         + random_password
     )
 
     send_mail(
-        "User credentials",
+        "Korisnički podaci",
         emailMessage,
         None,
         [newUser.email],

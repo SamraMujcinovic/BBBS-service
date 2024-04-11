@@ -34,7 +34,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "bbbs.organisation@gmail.com"
 EMAIL_HOST_PASSWORD = "fzjvawpzgtbebcbz"
-DEFAULT_FROM_EMAIL = "BBBS Organisation Team <noreply@bbbs.com>"
+DEFAULT_FROM_EMAIL = "SBSS Organizacijski Tim <noreply@bbbs.com>"
 
 # Application definition
 
