@@ -355,6 +355,7 @@ class ChildSerializer(serializers.ModelSerializer):
             "mentoring_reason",
             "status",
             "guardian_consent",
+            "vaccination_status",
             "coordinator",
             "volunteer",
             "child_organisation",
@@ -393,6 +394,7 @@ class ChildSerializer(serializers.ModelSerializer):
         family_model = validated_data["family_model"]
         mentoring_reason = validated_data["mentoring_reason"]
         guardian_consent = validated_data["guardian_consent"]
+        vaccination_status = validated_data["vaccination_status"]
         volunteer = validated_data.get("volunteer", None)
         new_child = Child.objects.create(
             first_name=first_name,
@@ -403,6 +405,7 @@ class ChildSerializer(serializers.ModelSerializer):
             family_model=family_model,
             status=volunteer is not None,
             guardian_consent=guardian_consent,
+            vaccination_status=vaccination_status,
             volunteer=volunteer,
         )
         new_child.save()
@@ -451,6 +454,7 @@ class ChildSerializer(serializers.ModelSerializer):
         instance.family_model = validated_data["family_model"]
         instance.mentoring_reason.set(validated_data["mentoring_reason"])
         instance.guardian_consent = validated_data["guardian_consent"]
+        instance.vaccination_status = validated_data["vaccination_status"]
         instance.status = validated_data["status"]
 
         # set coordinator

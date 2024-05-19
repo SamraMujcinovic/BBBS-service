@@ -153,6 +153,7 @@ class Child(models.Model):
     mentoring_reason = models.ManyToManyField(Mentoring_Reason)
     status = models.BooleanField()
     guardian_consent = models.BooleanField()
+    vaccination_status = models.BooleanField()
     coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.CASCADE)
     volunteer = models.OneToOneField(
         Volunteer, on_delete=models.CASCADE, null=True  # check what to do on delete
