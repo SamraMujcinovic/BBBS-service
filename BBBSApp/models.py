@@ -40,7 +40,7 @@ class Coordinator(models.Model):
 
 
 class Volunteer(models.Model):
-    GENDER = (("M", "Muški"), ("Z", "Ženski"), ("N", "Ostali"))
+    GENDER = (("M", "Muški"), ("Z", "Ženski"))
 
     SSS = "SSS"
     BSc = "BSc"
@@ -115,7 +115,7 @@ class Mentoring_Reason(models.Model):
 
 
 class Child(models.Model):
-    GENDER = (("M", "Muški"), ("Z", "Ženski"), ("N", "Ostali"))
+    GENDER = (("M", "Muški"), ("Z", "Ženski"))
 
     DISCIPILE = "pohađa"
     CUSTOMIZED_PROGRAMM = "prilagođeni program"
