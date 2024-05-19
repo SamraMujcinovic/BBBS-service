@@ -226,10 +226,18 @@ class Form(models.Model):
     INDIVIDUALY = "individualno"
     WITH_OTHER_COUPLES = "sa drugim parovima"
     GROUP = "grupno"
+    GROUP_CONSULTING = "grupni savjetodavni"
+    INDIVIDUALY_CONSULTING = "individualni savjetodavni"
+    EXCURSION = "izlet"
+    SELF_IMPROVEMENT = "rad na sebi"
     ACTIVITY_TYPE = (
         (INDIVIDUALY, "Individualno"),
         (WITH_OTHER_COUPLES, "Druženje sa drugim parovima"),
         (GROUP, "Grupna aktivnost"),
+        (GROUP_CONSULTING, "Grupni savjetodavni"),
+        (INDIVIDUALY_CONSULTING, "Individualni savjetodavni"),
+        (EXCURSION, "Izlet"),
+        (SELF_IMPROVEMENT, "Radionica za rad na sebi")
     )
 
     BAD = 0
@@ -244,9 +252,9 @@ class Form(models.Model):
     date = models.DateField()
     duration = models.FloatField()
     activity_type = models.CharField(choices=ACTIVITY_TYPE, max_length=50)
-    place = models.ManyToManyField(Hang_Out_Place)
+    place = models.ManyToManyField(Hang_Out_Place, blank=True)
     evaluation = models.PositiveSmallIntegerField(choices=EVALUATION)
-    activities = models.ManyToManyField(Activities)
+    activities = models.ManyToManyField(Activities, blank=True)
     description = models.TextField(max_length=500, null=True, blank=True)
     child = models.CharField(max_length=10)
     volunteer = models.ForeignKey(Volunteer, on_delete=models.CASCADE, null=False)
