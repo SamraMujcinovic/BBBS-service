@@ -250,11 +250,13 @@ class Form(models.Model):
     )
 
     date = models.DateField()
+    activity_start_time = models.IntegerField(default=720) #12:00
+    activity_end_time = models.IntegerField(default=810) #13:30
     duration = models.FloatField()
     activity_type = models.CharField(choices=ACTIVITY_TYPE, max_length=50)
     place = models.ManyToManyField(Hang_Out_Place, blank=True)
     evaluation = models.PositiveSmallIntegerField(choices=EVALUATION)
     activities = models.ManyToManyField(Activities, blank=True)
     description = models.TextField(max_length=500, null=True, blank=True)
-    child = models.CharField(max_length=10)
+    child = models.CharField(max_length=10, default="DIJETE")
     volunteer = models.ForeignKey(Volunteer, on_delete=models.CASCADE, null=False)

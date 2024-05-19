@@ -538,10 +538,12 @@ class FormSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Form
-        read_only_fields = ("id", "volunteer","child")
+        read_only_fields = ("id", "volunteer","child", "duration")
         fields = (
             "id",
             "date",
+            "activity_start_time",
+            "activity_end_time",
             "duration",
             "activity_type",
             "place",
@@ -572,14 +574,19 @@ class FormSerializer(serializers.ModelSerializer):
                 {"activities": "Too many options selected"}
             )
 
-        if float(data["duration"]) == 0.0:
+        if int(data["activity_start_time"]) == 0:
             raise serializers.ValidationError(
-                {"duration": "Duration cannot be zero(0)"}
+                {"activity_start_time": "Start time cannot be zero(0)"}
             )
 
-        if countDecimalPlaces(data["duration"]) > 2:
+        if int(data["activity_end_time"]) == 0:
             raise serializers.ValidationError(
-                {"duration": "Duration must be specified with two(2) decimal places"}
+                {"activity_end_time": "End time cannot be zero(0)"}
+            )
+
+        if int(data["activity_start_time"]) >= int(data["activity_end_time"]):
+            raise serializers.ValidationError(
+                {"activity_start_time": "Start time cannot be after end time."}
             )
 
         for place in data["place"]:
@@ -609,7 +616,8 @@ class FormSerializer(serializers.ModelSerializer):
     @atomic  # used as transactional
     def create(self, validated_data):
         date = validated_data["date"]
-        duration = validated_data["duration"]
+        activity_start_time = validated_data["activity_start_time"]
+        activity_end_time = validated_data["activity_end_time"]
         activity_type = validated_data["activity_type"]
         evaluation = validated_data["evaluation"]
         description = validated_data["description"]
@@ -619,9 +627,13 @@ class FormSerializer(serializers.ModelSerializer):
         volunteer = Volunteer.objects.filter(user_id=current_user.id).first()
         child = volunteer.child.code
 
+        duration_in_minutes = activity_end_time - activity_start_time
+
         new_form = Form.objects.create(
             date=date,
-            duration=duration,
+            activity_start_time=activity_start_time,
+            activity_end_time=activity_end_time,
+            duration=duration_in_minutes/60.,
             activity_type=activity_type,
             evaluation=evaluation,
             description=description,
