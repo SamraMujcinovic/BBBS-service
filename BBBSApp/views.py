@@ -106,25 +106,25 @@ class CityView(viewsets.ModelViewSet):
 
 class DevelopmentalDifficultiesView(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
-    queryset = Developmental_Difficulties.objects.all()
+    queryset = Developmental_Difficulties.objects.all().order_by("id")
     serializer_class = Developmental_DifficultiesSerializer
 
 
 class MentoringReasonView(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
-    queryset = Mentoring_Reason.objects.all()
+    queryset = Mentoring_Reason.objects.all().order_by("id")
     serializer_class = MentoringReasonSerializer
 
 
 class MentoringReasonCategoryView(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
-    queryset = Mentoring_Reason_Category.objects.all()
+    queryset = Mentoring_Reason_Category.objects.all().order_by("id")
     serializer_class = MentoringReasonCategorySerializer
 
 
 class HangOutPlaceView(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
-    queryset = Hang_Out_Place.objects.all()
+    queryset = Hang_Out_Place.objects.all().order_by("id")
     serializer_class = HangOutPlaceSerializer
 
 
