@@ -182,10 +182,9 @@ class VolunteerSerializer(serializers.ModelSerializer):
     child = serializers.CharField(source='child.code', required=False)
     birth_date = serializers.DateField(format="%d.%m.%Y", input_formats=["%d.%m.%Y"])
 
-
     class Meta:
         model = Volunteer
-        read_only_fields = ("id", "child")
+        read_only_fields = ("id", "child", "registration_date")
         fields = (
             "id",
             "user",
@@ -197,6 +196,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
             "employment_status",
             "good_conduct_certificate",
             "status",
+            "registration_date",
             "coordinator",
             "volunteer_organisation",
             "volunteer_city",
@@ -238,6 +238,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
             employment_status=employment_status,
             good_conduct_certificate=good_conduct_certificate,
             status=status,
+            registration_date=CURRENT_DATE
         )
         new_volunteer.save()
 

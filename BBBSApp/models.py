@@ -73,6 +73,7 @@ class Volunteer(models.Model):
     employment_status = models.CharField(choices=EMPLOYMENT_STATUS, max_length=15)
     good_conduct_certificate = models.BooleanField()
     status = models.BooleanField()
+    registration_date = models.DateField(default='django.utils.timezone.now', blank=True)
     coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.CASCADE)
     volunteer_organisation = models.ManyToManyField(
         "Organisation",
