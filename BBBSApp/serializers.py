@@ -180,6 +180,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
     education_level = ChoiceField(choices=Volunteer.EDUCATION_LEVEL)
     employment_status = ChoiceField(choices=Volunteer.EMPLOYMENT_STATUS)
     child = serializers.CharField(source='child.code', required=False)
+    birth_date = serializers.DateField(format="%d.%m.%Y", input_formats=["%d.%m.%Y"])
 
 
     class Meta:
@@ -189,7 +190,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
             "id",
             "user",
             "gender",
-            "birth_year",
+            "birth_date",
             "phone_number",
             "education_level",
             "faculty_department",
@@ -219,7 +220,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
         new_user.save()
 
         gender = validated_data["gender"]
-        birth_year = validated_data["birth_year"]
+        birth_date = validated_data["birth_date"]
         phone_number = validated_data["phone_number"]
         education_level = validated_data["education_level"]
         faculty_department = validated_data["faculty_department"]
@@ -230,7 +231,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
         new_volunteer = Volunteer.objects.create(
             user=new_user,
             gender=gender,
-            birth_year=birth_year,
+            birth_date=birth_date,
             phone_number=phone_number,
             education_level=education_level,
             faculty_department=faculty_department,
@@ -269,7 +270,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
         user.last_name = validated_data["user"]["last_name"]
         user.save()
 
-        instance.birth_year = validated_data["birth_year"]
+        instance.birth_date = validated_data["birth_date"]
         instance.phone_number = validated_data["phone_number"]
         instance.education_level = validated_data["education_level"]
         instance.faculty_department = validated_data["faculty_department"]

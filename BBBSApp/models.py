@@ -66,10 +66,7 @@ class Volunteer(models.Model):
         User, on_delete=models.CASCADE
     )  # has first_name, last_name, username, password, email, group
     gender = models.CharField(max_length=1, choices=GENDER)
-    birth_year = models.PositiveIntegerField(
-        validators=[MinValueValidator(1950), MaxValueValidator(CURRENT_DATE.year)],
-        null=False,
-    )
+    birth_date = models.DateField(default='1990-01-01')
     phone_number = models.CharField(validators=[PHONE_REGEX], max_length=9, null=True)
     education_level = models.CharField(choices=EDUCATION_LEVEL, max_length=15)
     faculty_department = models.TextField(null=True, blank=True)
