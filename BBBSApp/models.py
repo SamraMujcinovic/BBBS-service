@@ -143,10 +143,7 @@ class Child(models.Model):
     first_name = models.CharField(max_length=10, blank=True)
     last_name = models.CharField(max_length=15, blank=True)
     gender = models.CharField(choices=GENDER, max_length=1)
-    birth_year = models.PositiveIntegerField(
-        validators=[MinValueValidator(1950), MaxValueValidator(CURRENT_DATE.year)],
-        null=False,
-    )
+    birth_date = models.DateField()
     school_status = models.CharField(choices=SCHOOL_STATUS, max_length=50)
     developmental_difficulties = models.ManyToManyField(Developmental_Difficulties)
     family_model = models.CharField(choices=FAMILY_MODEL, max_length=50)

@@ -338,6 +338,7 @@ class ChildSerializer(serializers.ModelSerializer):
     gender = ChoiceField(choices=Child.GENDER)
     school_status = ChoiceField(choices=Child.SCHOOL_STATUS)
     family_model = ChoiceField(choices=Child.FAMILY_MODEL)
+    birth_date = serializers.DateField(format="%d.%m.%Y", input_formats=["%d.%m.%Y"])
 
     class Meta:
         model = Child
@@ -348,7 +349,7 @@ class ChildSerializer(serializers.ModelSerializer):
             "last_name",
             "code",
             "gender",
-            "birth_year",
+            "birth_date",
             "school_status",
             "developmental_difficulties",
             "family_model",
@@ -388,7 +389,7 @@ class ChildSerializer(serializers.ModelSerializer):
         first_name = validated_data["first_name"]
         last_name = validated_data["last_name"]
         gender = validated_data["gender"]
-        birth_year = validated_data["birth_year"]
+        birth_date = validated_data["birth_date"]
         school_status = validated_data["school_status"]
         developmental_difficulties = validated_data["developmental_difficulties"]
         family_model = validated_data["family_model"]
@@ -400,7 +401,7 @@ class ChildSerializer(serializers.ModelSerializer):
             first_name=first_name,
             last_name=last_name,
             gender=gender,
-            birth_year=birth_year,
+            birth_date=birth_date,
             school_status=school_status,
             family_model=family_model,
             status=volunteer is not None,
@@ -448,7 +449,7 @@ class ChildSerializer(serializers.ModelSerializer):
         return serializer.data
 
     def update(self, instance, validated_data):
-        instance.birth_year = validated_data["birth_year"]
+        instance.birth_date = validated_data["birth_date"]
         instance.school_status = validated_data["school_status"]
         instance.developmental_difficulties.set(validated_data["developmental_difficulties"])
         instance.family_model = validated_data["family_model"]
