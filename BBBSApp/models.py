@@ -149,6 +149,10 @@ class Child(models.Model):
     status = models.BooleanField()
     guardian_consent = models.BooleanField()
     vaccination_status = models.BooleanField()
+    health_difficulties = models.TextField(max_length=500, null=True, blank=True)
+    active_pup = models.TextField(max_length=500, null=True, blank=True)
+    passive_pup = models.TextField(max_length=500, null=True, blank=True)
+    child_potential = models.TextField(max_length=500, null=True, blank=True)
     coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.CASCADE)
     volunteer = models.OneToOneField(
         Volunteer, on_delete=models.CASCADE, null=True  # check what to do on delete

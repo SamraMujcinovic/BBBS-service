@@ -359,6 +359,10 @@ class ChildSerializer(serializers.ModelSerializer):
             "status",
             "guardian_consent",
             "vaccination_status",
+            "health_difficulties",
+            "active_pup",
+            "passive_pup",
+            "child_potential",
             "coordinator",
             "volunteer",
             "child_organisation",
@@ -398,6 +402,10 @@ class ChildSerializer(serializers.ModelSerializer):
         mentoring_reason = validated_data["mentoring_reason"]
         guardian_consent = validated_data["guardian_consent"]
         vaccination_status = validated_data["vaccination_status"]
+        health_difficulties = validated_data["health_difficulties"]
+        active_pup = validated_data["active_pup"]
+        passive_pup = validated_data["passive_pup"]
+        child_potential = validated_data["child_potential"]
         volunteer = validated_data.get("volunteer", None)
         new_child = Child.objects.create(
             first_name=first_name,
@@ -409,6 +417,10 @@ class ChildSerializer(serializers.ModelSerializer):
             status=volunteer is not None,
             guardian_consent=guardian_consent,
             vaccination_status=vaccination_status,
+            health_difficulties=health_difficulties,
+            active_pup=active_pup,
+            passive_pup=passive_pup,
+            child_potential=child_potential,
             volunteer=volunteer,
         )
         new_child.save()
@@ -459,6 +471,10 @@ class ChildSerializer(serializers.ModelSerializer):
         instance.guardian_consent = validated_data["guardian_consent"]
         instance.vaccination_status = validated_data["vaccination_status"]
         instance.status = validated_data["status"]
+        instance.health_difficulties = validated_data["health_difficulties"] if validated_data["health_difficulties"] is not None else None
+        instance.active_pup = validated_data["active_pup"]
+        instance.passive_pup = validated_data["passive_pup"]
+        instance.child_potential = validated_data["child_potential"]
 
         # set coordinator
         current_user = self.context["request"].user
