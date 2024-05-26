@@ -137,6 +137,17 @@ class Child(models.Model):
         (INSTITUTION, "Institucija"),
     )
 
+    FIRST_REGISTRATION = "prva registracija"
+    SAME_VOLUNTEER = "nastavlja isti volonter"
+    NEW_VOLUNTEER = "nastavlja drugi volonter"
+    NOT_ACTIVE = "nije aktivan"
+    STATUS = (
+        (FIRST_REGISTRATION, "Dijete prvi put učestvuje u programu"),
+        (SAME_VOLUNTEER, "Dijete je i ranije učestvovalo u programu i nastavlja sa starim volonterom/kom"),
+        (NEW_VOLUNTEER, "Dijete je i ranije učestvovalo u programu i nastavlja sa novim volonterom/kom"),
+        (NOT_ACTIVE, "Dijete nije aktivno uključeno u program"),
+    )
+
     code = models.CharField(max_length=8)
     first_name = models.CharField(max_length=10, blank=True)
     last_name = models.CharField(max_length=15, blank=True)
@@ -146,7 +157,7 @@ class Child(models.Model):
     developmental_difficulties = models.ManyToManyField(Developmental_Difficulties)
     family_model = models.CharField(choices=FAMILY_MODEL, max_length=50)
     mentoring_reason = models.ManyToManyField(Mentoring_Reason)
-    status = models.BooleanField()
+    status = models.CharField(choices=STATUS, max_length=70)
     guardian_consent = models.BooleanField()
     vaccination_status = models.BooleanField()
     health_difficulties = models.TextField(max_length=500, null=True, blank=True)

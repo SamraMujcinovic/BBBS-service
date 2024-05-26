@@ -341,6 +341,7 @@ class ChildSerializer(serializers.ModelSerializer):
     school_status = ChoiceField(choices=Child.SCHOOL_STATUS)
     family_model = ChoiceField(choices=Child.FAMILY_MODEL)
     birth_date = serializers.DateField(format="%d.%m.%Y", input_formats=["%d.%m.%Y"])
+    status = ChoiceField(choices=Child.STATUS)
 
     class Meta:
         model = Child
@@ -397,6 +398,7 @@ class ChildSerializer(serializers.ModelSerializer):
         gender = validated_data["gender"]
         birth_date = validated_data["birth_date"]
         school_status = validated_data["school_status"]
+        status = validated_data["status"]
         developmental_difficulties = validated_data["developmental_difficulties"]
         family_model = validated_data["family_model"]
         mentoring_reason = validated_data["mentoring_reason"]
@@ -414,7 +416,7 @@ class ChildSerializer(serializers.ModelSerializer):
             birth_date=birth_date,
             school_status=school_status,
             family_model=family_model,
-            status=volunteer is not None,
+            status=status,
             guardian_consent=guardian_consent,
             vaccination_status=vaccination_status,
             health_difficulties=health_difficulties,
@@ -449,10 +451,6 @@ class ChildSerializer(serializers.ModelSerializer):
 
         new_child.developmental_difficulties.set(developmental_difficulties)
         new_child.mentoring_reason.set(mentoring_reason)
-
-        if volunteer is not None:
-            volunteer.status = True
-            volunteer.save()
 
         return new_child
 
@@ -498,10 +496,11 @@ class ChildSerializer(serializers.ModelSerializer):
             new_volunteer = Volunteer.objects.get(id=validated_data.get('volunteer', None).id)
         instance.volunteer = validated_data.get('volunteer', None)
 
-        if instance.volunteer is not None:
-            instance.status = True
-        else:
-            instance.status = False
+        if instance.status == "nije aktivan":
+            instance.volunteer = None
+
+        if instance.volunteer is None:
+            instance.status = "nije aktivan"
 
         if old_volunteer is not None:
             old_volunteer.status = False
