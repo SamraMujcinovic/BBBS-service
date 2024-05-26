@@ -62,6 +62,25 @@ class Volunteer(models.Model):
         (STUDENT, "Student"),
     )
 
+    PRIRODNI = "prirodno matematicki"
+    TEHNICKI = "tehnicko tehnoloski"
+    UMJETNICKI = "umjetnicki"
+    DRUSTVENI = "drustveni"
+    HUMANISTICKI = "humanisticki"
+    ZDRAVSTVENI = "zdravstveni"
+    SREDNJA_SKOLA = "srednja skola"
+    DRUGO = "drugo"
+    FACULTY_DEPARTMENT = (
+        (PRIRODNI, "Prirodno-matematički odsjeci (Matematika, fizika, biologija, geografija, hemija i sl.)"),
+        (TEHNICKI, "Tehničko - tehnološki odsjeci (mašinstvo, informatika, arhitektura, elektrotehnika i sl.)"),
+        (UMJETNICKI, "Umjetnički odsjeci (scenske, likovne, muzičke i ostale umjetnosti)"),
+        (DRUSTVENI, "Društveni odsjeci (ekonomija, pravo, politika, teologija, komunikologija, kriminalistika, historija,jezici i književnost i sl.)"),
+        (HUMANISTICKI, "Humanistički i pomagački odsjeci (psihologija, pedagogija, sociologija, socijalni rad, defektologija, logopedija i sl.)"),
+        (ZDRAVSTVENI, "Zdravstveni odsjeci (primarna medicina, laboratorija, stomatologija, farmacija, fiziologija, radiologija i sl.)"),
+        (SREDNJA_SKOLA, "Srednja škola/Zanat"),
+        (DRUGO, "Drugo")
+    )
+
     user = models.OneToOneField(
         User, on_delete=models.CASCADE
     )  # has first_name, last_name, username, password, email, group
@@ -69,7 +88,8 @@ class Volunteer(models.Model):
     birth_date = models.DateField(default='1990-01-01')
     phone_number = models.CharField(validators=[PHONE_REGEX], max_length=9, null=True)
     education_level = models.CharField(choices=EDUCATION_LEVEL, max_length=15)
-    faculty_department = models.TextField(null=True, blank=True)
+    faculty_department = models.CharField(choices=FACULTY_DEPARTMENT, max_length=100, default=PRIRODNI)
+    faculty_other_department = models.TextField(null=True, blank=True)
     employment_status = models.CharField(choices=EMPLOYMENT_STATUS, max_length=15)
     good_conduct_certificate = models.BooleanField()
     status = models.BooleanField()

@@ -179,6 +179,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
     gender = ChoiceField(choices=Volunteer.GENDER)
     education_level = ChoiceField(choices=Volunteer.EDUCATION_LEVEL)
     employment_status = ChoiceField(choices=Volunteer.EMPLOYMENT_STATUS)
+    faculty_department = ChoiceField(choices=Volunteer.FACULTY_DEPARTMENT)
     child = serializers.CharField(source='child.code', required=False)
     birth_date = serializers.DateField(format="%d.%m.%Y", input_formats=["%d.%m.%Y"])
 
@@ -193,6 +194,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
             "phone_number",
             "education_level",
             "faculty_department",
+            "faculty_other_department",
             "employment_status",
             "good_conduct_certificate",
             "status",
@@ -224,6 +226,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
         phone_number = validated_data["phone_number"]
         education_level = validated_data["education_level"]
         faculty_department = validated_data["faculty_department"]
+        faculty_other_department = validated_data["faculty_other_department"]
         employment_status = validated_data["employment_status"]
         good_conduct_certificate = validated_data["good_conduct_certificate"]
         status = validated_data["status"]
@@ -235,6 +238,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
             phone_number=phone_number,
             education_level=education_level,
             faculty_department=faculty_department,
+            faculty_other_department=faculty_other_department,
             employment_status=employment_status,
             good_conduct_certificate=good_conduct_certificate,
             status=status,
@@ -275,6 +279,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
         instance.phone_number = validated_data["phone_number"]
         instance.education_level = validated_data["education_level"]
         instance.faculty_department = validated_data["faculty_department"]
+        instance.faculty_other_department = validated_data["faculty_other_department"]
         instance.employment_status = validated_data["employment_status"]
         instance.good_conduct_certificate = validated_data["good_conduct_certificate"]
         instance.status = validated_data["status"]
