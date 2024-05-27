@@ -213,14 +213,15 @@ class VolunteerView(viewsets.ModelViewSet):
         if self.request.GET.get("coordinator") is not None:
             coordinator = self.request.GET.get("coordinator")
             resultset = resultset.filter(coordinator=coordinator)
+        if (self.request.GET.get("availableVolunteers") is not None and
+                self.request.GET.get("availableVolunteers") == "True"):
+            resultset = resultset.filter(child=None)
         if self.request.GET.get("child") is not None:
             child_volunteer = Volunteer.objects.filter(child=self.request.GET.get("child"))
             # add current childs volunteer to list of accessible volunteers
             if child_volunteer.first() is not None:
-                if isUserCoordinator(user):
-                    resultset = resultset | child_volunteer
-                elif child_volunteer.first().coordinator.id == int(self.request.GET.get("coordinator")) and child_volunteer.first().gender == self.request.GET.get("gender"):
-                    resultset = resultset | child_volunteer
+                resultset = resultset | child_volunteer
+
         return resultset.order_by('volunteer_organisation', 'volunteer_city', 'user__first_name', 'user__last_name')
 
     def get_permissions(self):
