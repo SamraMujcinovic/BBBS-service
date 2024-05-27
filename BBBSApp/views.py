@@ -94,6 +94,7 @@ class IsVolunteer(BasePermission):
 
 class OrganisationView(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
+    pagination_class = CustomPagination
     queryset = Organisation.objects.all()
     serializer_class = Organisation_Serializer
 

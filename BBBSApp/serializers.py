@@ -99,6 +99,15 @@ class Organisation_Serializer(serializers.ModelSerializer):
         model = Organisation
         fields = ("name", "id")
 
+    @atomic  # used as transactional
+    def create(self, validated_data):
+        new_organisation = Organisation.objects.create(
+            name=validated_data["name"]
+        )
+        new_organisation.save()
+
+        return new_organisation
+
 
 class City_Serializer(serializers.ModelSerializer):
     class Meta:
