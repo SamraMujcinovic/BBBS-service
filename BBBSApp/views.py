@@ -198,6 +198,11 @@ class VolunteerView(viewsets.ModelViewSet):
         if isUserVolunteer(user):
             resultset = Volunteer.objects.filter(user_id=user.id)
 
+        # when organisation filter is selected, get data from thar org only
+        if self.request.GET.get("organisationFilter") is not None:
+            organisation = self.request.GET.get("organisationFilter")
+            return resultset.filter(volunteer_organisation=organisation)
+
         if self.request.GET.get("status") is not None:
             volunteer_status = self.request.GET.get("status")
             resultset = resultset.filter(status=volunteer_status)
@@ -258,6 +263,11 @@ class ChildView(viewsets.ModelViewSet):
                 coordinator=coordinator.id
             )
 
+        # when organisation filter is selected, get data from that org only
+        if self.request.GET.get("organisationFilter") is not None:
+            organisation = self.request.GET.get("organisationFilter")
+            return resultset.filter(child_organisation=organisation)
+
         if self.request.GET.get("organisation") is not None:
             child_organisation = self.request.GET.get("organisation")
             resultset = resultset.filter(child_organisation=child_organisation)
@@ -284,7 +294,30 @@ class FormView(viewsets.ModelViewSet):
     pagination_class = CustomPagination
     # define queryset
     def get_queryset(self):
-        return get_accessible_forms(self.request.user)
+        resultset = get_accessible_forms(self.request.user)
+        if self.request.GET.get("organisationFilter") is not None:
+            organisation = self.request.GET.get("organisationFilter")
+            resultset = resultset.filter(volunteer__volunteer_organisation__id=organisation)
+            if not resultset:
+                return resultset
+        if self.request.GET.get("volunteerFilter") is not None:
+            volunteer = self.request.GET.get("volunteerFilter")
+            resultset = resultset.filter(volunteer_id=volunteer)
+            if not resultset:
+                return resultset
+        if self.request.GET.get("activityTypeFilter") is not None:
+            activity_type = self.request.GET.get("activityTypeFilter")
+            resultset = resultset.filter(activity_type=Form.ACTIVITY_TYPE_DICT.get(activity_type))
+            if not resultset:
+                return resultset
+        if self.request.GET.get("startDate") is not None and self.request.GET.get("endDate") is not None:
+            start_date = self.request.GET.get("startDate")
+            end_date = self.request.GET.get("endDate")
+            resultset = resultset.filter(date__range=[start_date, end_date])
+            if not resultset:
+                return resultset
+
+        return resultset
 
     def get_permissions(self):
         permission_classes = []
@@ -380,8 +413,19 @@ class FormsTotalHoursSumView(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request):
-        accessible_forms = get_accessible_forms(request.user)
-        return None if accessible_forms is None else Response(data=accessible_forms.aggregate(totalHours=Sum('duration')), status=status.HTTP_200_OK)
+        resultset = get_accessible_forms(self.request.user)
+        if self.request.GET.get("volunteerFilter") is not None:
+            volunteer = self.request.GET.get("volunteerFilter")
+            resultset = resultset.filter(volunteer_id=volunteer)
+        if self.request.GET.get("activityTypeFilter") is not None:
+            activity_type = self.request.GET.get("activityTypeFilter")
+            resultset = resultset.filter(activity_type=Form.ACTIVITY_TYPE_DICT.get(activity_type))
+        if self.request.GET.get("startDate") is not None and self.request.GET.get("endDate") is not None:
+            start_date = self.request.GET.get("startDate")
+            end_date = self.request.GET.get("endDate")
+            resultset = resultset.filter(date__range=[start_date, end_date])
+
+        return None if resultset is None else Response(data=resultset.aggregate(totalHours=Sum('duration')), status=status.HTTP_200_OK)
 
 
 def get_tokens_for_user(user):

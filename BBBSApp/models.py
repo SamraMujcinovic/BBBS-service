@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 
 from BBBSApp.utilis import CURRENT_DATE, PHONE_REGEX
-from django.core.validators import MaxValueValidator, MinValueValidator
 
 
 class City(models.Model):
@@ -270,6 +269,8 @@ class Form(models.Model):
         (EXCURSION, "Izlet"),
         (SELF_IMPROVEMENT, "Radionica za rad na sebi")
     )
+
+    ACTIVITY_TYPE_DICT = {value: key for key, value in ACTIVITY_TYPE}
 
     BAD = 0
     GOOD = 1
