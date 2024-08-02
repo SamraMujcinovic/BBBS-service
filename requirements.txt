@@ -14,7 +14,6 @@ google-auth==1.24.0
 google-auth-oauthlib==0.4.2
 Keras==2.4.3
 Keras-Preprocessing==1.1.2
-language-selector==0.1
 packaging==20.9
 pipenv==2020.11.15
 PyJWT==1.7.1
