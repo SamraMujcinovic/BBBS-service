@@ -28,3 +28,4 @@ rsa==4.6
 simplejson==3.16.0
 StackAPI==0.2.0
 StringGenerator==0.4.4
+gunicorn==22.0.0
