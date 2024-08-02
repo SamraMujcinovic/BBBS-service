@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-ma(g(**!=a^b!%f&jb7+grio&ler%fzz&l1y36j_az54wfmusr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["bbbs-service.onrender.com"]
 APPEND_SLASH = False
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -64,6 +64,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://bbbs-ui.vercel.app"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
