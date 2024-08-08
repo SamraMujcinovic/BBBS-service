@@ -11,8 +11,6 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 from datetime import timedelta
 from pathlib import Path
-import os
-import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,7 +25,7 @@ SECRET_KEY = "django-insecure-ma(g(**!=a^b!%f&jb7+grio&ler%fzz&l1y36j_az54wfmusr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["bbbs-service.onrender.com"]
+ALLOWED_HOSTS = []
 APPEND_SLASH = False
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -65,8 +63,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "https://bbbs-ui.vercel.app"
+    "http://localhost:3000"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -95,20 +92,15 @@ WSGI_APPLICATION = "BBBS.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-#DATABASES = {
- #   "default": {
-  #      "ENGINE": "django.db.backends.postgresql_psycopg2",
-   #     "NAME": "bbbs",
-    #    "USER": "bbbsuser",
-     #   "PASSWORD": "password",
-      #  "HOST": "localhost",
-       # "PORT": "5432",
-  #  }
-#}
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL')
-    )
+   "default": {
+       "ENGINE": "django.db.backends.postgresql_psycopg2",
+       "NAME": "bbbs",
+       "USER": "bbbsuser",
+       "PASSWORD": "password",
+       "HOST": "localhost",
+       "PORT": "5432",
+    }
 }
 
 
