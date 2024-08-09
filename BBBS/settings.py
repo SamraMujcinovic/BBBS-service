@@ -63,7 +63,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000", "https://bbbs-ui.vercel.app/"
+    "http://localhost:3000", "https://bbbs-ui.vercel.app"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
