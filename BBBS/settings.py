@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-ma(g(**!=a^b!%f&jb7+grio&ler%fzz&l1y36j_az54wfmusr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["13.53.164.234", "sbss.hopto.org", "https://bbbs-ui.vercel.app/"]
 APPEND_SLASH = False
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -63,7 +63,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000"
+    "http://localhost:3000", "https://bbbs-ui.vercel.app/"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -92,14 +92,16 @@ WSGI_APPLICATION = "BBBS.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+
+
 DATABASES = {
-   "default": {
-       "ENGINE": "django.db.backends.postgresql_psycopg2",
-       "NAME": "bbbs",
-       "USER": "bbbsuser",
-       "PASSWORD": "password",
-       "HOST": "localhost",
-       "PORT": "5432",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'bbbs',
+        'USER': 'dbusername',
+        'PASSWORD': 'Samra1711#',
+        'HOST': 'bbbs-database.cdycws4q4x4d.eu-north-1.rds.amazonaws.com',
+        'PORT': '5432',
     }
 }
 
