@@ -457,7 +457,8 @@ class LoginView(APIView):
                     value=data["refresh"],
                     expires=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
                     httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-                    samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
+                    samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+                    secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE']
                 )
                 csrf.get_token(request)
                 response.data = {"Success": "Login successfully", "data": data["access"]}
