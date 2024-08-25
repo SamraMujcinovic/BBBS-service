@@ -545,8 +545,8 @@ class EmailRemindersView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-        start_date = request.data.get("monthAndYear", None)
-        end_date = request.data.get("monthAndYear", None)
+        start_date = request.data.get("start_date", None)
+        end_date = request.data.get("end_date", None)
 
         if request.data.get("volunteer_user_id", None) is None or start_date is None or end_date is None:
             return Response(status=status.HTTP_400_BAD_REQUEST)
