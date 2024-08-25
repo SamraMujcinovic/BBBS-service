@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-ma(g(**!=a^b!%f&jb7+grio&ler%fzz&l1y36j_az54wfmusr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["13.53.164.234", "sbss.hopto.org", "https://bbbs-ui.vercel.app/"]
+ALLOWED_HOSTS = ["13.53.164.234", "sbss.hopto.org", "bbbs-ui.vercel.app"]
 APPEND_SLASH = False
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
