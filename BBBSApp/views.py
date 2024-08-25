@@ -545,11 +545,10 @@ class EmailRemindersView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-        monthAndYear = datetime.strptime(request.data.get("monthAndYear", None), '%Y-%m-%d')
-        startDate = monthAndYear
-        endDate = datetime(monthAndYear.year, monthAndYear.month, calendar.monthrange(startDate.year, startDate.month)[1])
+        start_date = request.data.get("monthAndYear", None)
+        end_date = request.data.get("monthAndYear", None)
 
-        if request.data.get("volunteer_user_id", None) is None or monthAndYear is None:
+        if request.data.get("volunteer_user_id", None) is None or start_date is None or end_date is None:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.filter(id=request.data.get("volunteer_user_id")).first()
@@ -558,9 +557,9 @@ class EmailRemindersView(APIView):
 
         email_message = (
                 "Poštovani,\n\nVaši sati za period od "
-                + startDate.strftime("%d.%m.%Y")
+                + start_date.strftime("%d.%m.%Y")
                 + " do "
-                + endDate.strftime("%d.%m.%Y")
+                + end_date.strftime("%d.%m.%Y")
                 + " nisu dovoljni. Minimalan broj sati u mjesecu je 16. Molimo Vas da unesete preostale sate.\n\nUnaprijed zahvaljujemo!"
         )
 
