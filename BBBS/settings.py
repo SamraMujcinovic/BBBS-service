@@ -154,8 +154,15 @@ SIMPLE_JWT = {
 
 }
 
-CSRF_COOKIE_SECURE = True
+CSRF_TRUSTED_ORIGINS = [
+    'https://bbbs-ui.vercel.app',
+]
+
 CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
+
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
 
 
 # Password validation
