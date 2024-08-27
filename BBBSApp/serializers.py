@@ -70,11 +70,16 @@ def saveUser(validated_data):
 
     newUser.save()
 
+    app_link = "https://bbbs-ui.vercel.app"
+
     emailMessage = (
         "Dobrodošli u organizaciju 'Stariji brat, starija sestra'.\n\nU nastavku E-maila možete pronaći svoje pristupne podatke.\n\nKorisničko ime: "
         + newUser.username
         + "\nLozinka: "
         + random_password
+        + "\n\n"
+        + "Aplikacija je dostupna na linku: "
+        + app_link
     )
 
     send_mail(
