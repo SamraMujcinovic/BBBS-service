@@ -32,10 +32,12 @@ router.register(r"activity-categories", views.ActivityCategoryView, basename="Ac
 urlpatterns = [
     url(r"^", include(router.urls)),
     path("login", views.LoginView.as_view(), name="login_view"),
+    path('login/activate/', views.ActivateUser.as_view(), name='activate_user'),
     path("login/refresh", views.CustomTokenRefreshView.as_view(), name="login_refresh_view"),
     path("logout", views.LogoutView.as_view(), name="logout_view"),
     path("password", views.PasswordChangeView.as_view(), name="password_change_view"),
-    path("password/reset", views.PasswordResetView.as_view(), name="password_reset_view"),
+    path("password/reset", views.RequestPasswordResetView.as_view(), name="password_reset_view"),
+    path("password/reset/confirm", views.PasswordResetConfirmView.as_view(), name="password_reset_confirm_view"),
     path("reminders", views.EmailRemindersView.as_view(), name="reminder_emails"),
-    path("forms/totals", views.FormsTotalHoursSumView.as_view(), name="forms_total_hours")
+    path("forms/totals", views.FormsTotalHoursSumView.as_view(), name="forms_total_hours"),
 ]

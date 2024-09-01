@@ -1,8 +1,7 @@
-import calendar
 from datetime import datetime
 
-import strgen
 from django.core.mail import send_mail
+from django.utils.encoding import force_str, force_bytes
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
@@ -20,6 +19,10 @@ from django.contrib.auth import authenticate
 from django.conf import settings
 from rest_framework import status
 from django.contrib.auth.hashers import check_password
+
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.contrib.auth.tokens import default_token_generator
+from django.shortcuts import get_object_or_404
 
 # import viewsets
 from rest_framework import viewsets
@@ -510,35 +513,61 @@ class PasswordChangeView(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
-class PasswordResetView(APIView):
+class RequestPasswordResetView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-        if request.data.get("email", None) is None:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        email = request.data.get('email')
+        if not email:
+            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = User.objects.filter(username=request.data.get("email")).first()
-        if user is None:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        # Check if the user with the provided email exists
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({'error': 'No user associated with this email'}, status=status.HTTP_404_NOT_FOUND)
 
-        random_password = strgen.StringGenerator("[\w\d]{10}").render()
-        user.set_password(random_password)
-        user.save()
-        email_message = (
-                "Dobrodošli u organizaciju 'Stariji brat, starija sestra'.\n\nVaša lozinka je uspješno oporavljena. U nastavku E-maila možete pronaći nove pristupne podatke.\n\nKorisničko ime: "
-                + user.username
-                + "\nLozinka: "
-                + random_password
-        )
+        # Generate a reset token and URL-safe user ID
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        reset_link = f"{settings.CLIENT_URL}/reset-password/{uid}/{token}/"
 
+        # Send the reset email
         send_mail(
-            "Oporavak lozinke",
-            email_message,
+            'Oporavak lozinke',
+            f"Kliknite na link da unesete novu lozinku:\n{reset_link}",
             None,
             [user.email],
             fail_silently=False,
         )
-        return Response(status=status.HTTP_200_OK)
+
+        return Response({'success': 'Password reset email sent successfully'}, status=status.HTTP_200_OK)
+
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        uidb64 = request.data.get('uid')
+        token = request.data.get('token')
+        new_password = request.data.get('password')
+
+        # Decode the user ID from the base64 string
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response({'error': 'Invalid user ID'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate the token
+        if not default_token_generator.check_token(user, token):
+            return Response({'error': 'Invalid or expired token'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Set the new password
+        user.set_password(new_password)
+        user.save()
+
+        return Response({'success': 'Password has been reset successfully'}, status=status.HTTP_200_OK)
 
 
 class EmailRemindersView(APIView):
@@ -571,5 +600,32 @@ class EmailRemindersView(APIView):
             fail_silently=False,
         )
         return Response(status=status.HTTP_200_OK)
+
+
+class ActivateUser(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        uid = request.data.get('uid')
+        token = request.data.get('token')
+        password = request.data.get('password')
+
+        try:
+            # Decode the user ID
+            uid = force_str(urlsafe_base64_decode(uid))
+            user = get_object_or_404(User, pk=uid)
+
+            # Check the token validity
+            if default_token_generator.check_token(user, token):
+                # Set the new password
+                user.set_password(password)
+                user.is_active = True  # Activate the user
+                user.save()
+
+                return Response({'message': 'Account activated successfully.'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Invalid token or token expired.'}, status=status.HTTP_400_BAD_REQUEST)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response({'error': 'Invalid activation link.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
