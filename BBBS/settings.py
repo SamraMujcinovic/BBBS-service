@@ -164,6 +164,8 @@ CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = True
 
+PASSWORD_RESET_TIMEOUT = 7 * 24 * 60 * 60  # 7 days in seconds (604800 seconds)
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
