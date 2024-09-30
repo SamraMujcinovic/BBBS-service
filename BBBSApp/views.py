@@ -64,7 +64,8 @@ from .models import (
     Mentoring_Reason_Category,
     Hang_Out_Place,
     Activities,
-    Activity_Category
+    Activity_Category,
+    Volunteer_Organisation_City
 )
 from django.contrib.auth.models import User
 
@@ -98,7 +99,33 @@ class IsVolunteer(BasePermission):
 class OrganisationView(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
     pagination_class = CustomPagination
-    queryset = Organisation.objects.all()
+    def get_permissions(self):
+        permission_classes = []
+        if self.action == "create":
+            permission_classes = [IsAdmin]
+        elif self.action == "list":
+            permission_classes = [IsCoordinator | IsAdmin | IsVolunteer]
+        return [permission() for permission in permission_classes]
+
+        # define queryset
+    def get_queryset(self):
+        user = self.request.user
+        if isUserAdmin(user):
+            return Organisation.objects.all().order_by('name')
+        if isUserCoordinator(user):
+            coordinator = Coordinator.objects.get(user_id=user.id)
+            coordinator_organisation_city = Coordinator_Organisation_City.objects.get(
+                coordinator_id=coordinator.id
+            )
+            return Organisation.objects.filter(id=coordinator_organisation_city.organisation_id)
+        if isUserVolunteer(user):
+            volunteer = Volunteer.objects.get(user_id=user.id)
+            volunteer_organisation_city = Volunteer_Organisation_City.objects.get(
+                volunteer_id=volunteer.id
+            )
+            return Organisation.objects.filter(id=volunteer_organisation_city.organisation_id)
+        return None
+
     serializer_class = Organisation_Serializer
 
 
