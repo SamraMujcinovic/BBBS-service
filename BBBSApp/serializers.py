@@ -572,7 +572,7 @@ class FormSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Form
-        read_only_fields = ("id", "volunteer","child", "duration")
+        read_only_fields = ("id", "volunteer","duration")
         fields = (
             "id",
             "date",
@@ -584,7 +584,6 @@ class FormSerializer(serializers.ModelSerializer):
             "evaluation",
             "activities",
             "description",
-            "child"
         )
 
     def to_representation(self, instance):
@@ -659,7 +658,6 @@ class FormSerializer(serializers.ModelSerializer):
         activities = validated_data["activities"]
         current_user = self.context["request"].user
         volunteer = Volunteer.objects.filter(user_id=current_user.id).first()
-        child = volunteer.child.code
 
         duration_in_minutes = activity_end_time - activity_start_time
 
@@ -672,7 +670,6 @@ class FormSerializer(serializers.ModelSerializer):
             evaluation=evaluation,
             description=description,
             volunteer=volunteer,
-            child=child
         )
         new_form.save()
 

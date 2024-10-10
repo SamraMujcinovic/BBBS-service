@@ -185,7 +185,7 @@ class Child(models.Model):
     child_potential = models.TextField(max_length=500, null=True, blank=True)
     coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.CASCADE)
     volunteer = models.OneToOneField(
-        Volunteer, on_delete=models.CASCADE, null=True  # check what to do on delete
+        Volunteer, on_delete=models.CASCADE, null=True, blank=True  # check what to do on delete
     )
     child_organisation = models.ManyToManyField(
         "Organisation",
@@ -290,5 +290,4 @@ class Form(models.Model):
     evaluation = models.PositiveSmallIntegerField(choices=EVALUATION)
     activities = models.ManyToManyField(Activities, blank=True)
     description = models.TextField(max_length=500, null=True, blank=True)
-    child = models.CharField(max_length=10, default="DIJETE")
     volunteer = models.ForeignKey(Volunteer, on_delete=models.CASCADE, null=False)
