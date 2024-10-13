@@ -222,8 +222,7 @@ class VolunteerView(viewsets.ModelViewSet):
             )
             resultset = Volunteer.objects.filter(
                 volunteer_organisation=coordinator_organisation_city.organisation_id,
-                volunteer_city=coordinator_organisation_city.city_id,
-                coordinator=coordinator.id
+                volunteer_city=coordinator_organisation_city.city_id
             ).order_by('user__first_name', 'user__last_name')
         if isUserVolunteer(user):
             resultset = Volunteer.objects.filter(user_id=user.id)
@@ -245,9 +244,6 @@ class VolunteerView(viewsets.ModelViewSet):
         if self.request.GET.get("city") is not None:
             volunteer_city = self.request.GET.get("city")
             resultset = resultset.filter(volunteer_city=volunteer_city)
-        if self.request.GET.get("coordinator") is not None:
-            coordinator = self.request.GET.get("coordinator")
-            resultset = resultset.filter(coordinator=coordinator)
         if (self.request.GET.get("availableVolunteers") is not None and
                 self.request.GET.get("availableVolunteers") == "True"):
             resultset = resultset.filter(child=None)
@@ -289,8 +285,7 @@ class ChildView(viewsets.ModelViewSet):
             )
             resultset = Child.objects.filter(
                 child_organisation=coordinator_organisation_city.organisation_id,
-                child_city=coordinator_organisation_city.city_id,
-                coordinator=coordinator.id
+                child_city=coordinator_organisation_city.city_id
             )
 
         # when organisation filter is selected, get data from that org only
@@ -368,7 +363,8 @@ def get_accessible_forms(current_user):
         # allow coordinators to see forms of his volunteer
         coordinator = Coordinator.objects.get(user_id=current_user.id)
         return Form.objects.filter(
-            volunteer__coordinator_id=coordinator.id
+            volunteer__volunteer_organisation__in=coordinator.coordinator_organisation.all(),
+            volunteer__volunteer_city__in=coordinator.coordinator_city.all()
         ).order_by("-date")
     if isUserVolunteer(current_user):
         # allow volunteers to see his forms
@@ -402,7 +398,9 @@ class VolunteerHours(viewsets.ModelViewSet):
             coordinator = Coordinator.objects.get(user_id=user.id)
             return (Form
                     .objects
-                    .filter(volunteer__coordinator_id=coordinator.id, date__range=[start_date, end_date])
+                    .filter(volunteer__volunteer_organisation__in=coordinator.coordinator_organisation.all(),
+                            volunteer__volunteer_city__in=coordinator.coordinator_city.all(),
+                            date__range=[start_date, end_date])
                     .values(
                             volunteer_user_id=F('volunteer__user_id'),
                             volunteer_first_name=F('volunteer__user__first_name'),

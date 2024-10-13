@@ -309,12 +309,10 @@ class VolunteerSerializer(serializers.ModelSerializer):
             if volunteer_child is not None:
                 if volunteer_child.child_organisation != organisation_city.organisation or \
                         volunteer_child.child_city != organisation_city.city or \
-                        volunteer_child.coordinator != int(validated_data["coordinator"]):
-                    # if volunteers organisation or city changed, remove child from that volunteer
+                            instance.status == False:
+                    # if volunteers organisation or city or status changed, remove child from that volunteer
                     instance.child = None
-                    instance.status = False
                     volunteer_child.volunteer = None
-                    volunteer_child.status = False
                     volunteer_child.save()
 
         instance.save()
@@ -416,7 +414,7 @@ class ChildSerializer(serializers.ModelSerializer):
         mentoring_reason = validated_data["mentoring_reason"]
         guardian_consent = validated_data["guardian_consent"]
         vaccination_status = validated_data["vaccination_status"]
-        health_difficulties = validated_data["health_difficulties"]
+        health_difficulties = validated_data["health_difficulties"] if validated_data["health_difficulties"] is not None else None
         active_pup = validated_data["active_pup"]
         passive_pup = validated_data["passive_pup"]
         child_potential = validated_data["child_potential"]
@@ -481,7 +479,7 @@ class ChildSerializer(serializers.ModelSerializer):
         instance.guardian_consent = validated_data["guardian_consent"]
         instance.vaccination_status = validated_data["vaccination_status"]
         instance.status = validated_data["status"]
-        instance.health_difficulties = validated_data["health_difficulties"] if validated_data["health_difficulties"] is not None else None
+        instance.health_difficulties = validated_data["health_difficulties"]
         instance.active_pup = validated_data["active_pup"]
         instance.passive_pup = validated_data["passive_pup"]
         instance.child_potential = validated_data["child_potential"]
@@ -500,27 +498,10 @@ class ChildSerializer(serializers.ModelSerializer):
 
 
         # update child's volunteer
-        old_volunteer = None
-        new_volunteer = None
-        if instance.volunteer is not None:
-            old_volunteer = Volunteer.objects.get(id=instance.volunteer.id)
-        if validated_data.get('volunteer', None) is not None:
-            new_volunteer = Volunteer.objects.get(id=validated_data.get('volunteer', None).id)
         instance.volunteer = validated_data.get('volunteer', None)
 
         if instance.status == "nije aktivan":
             instance.volunteer = None
-
-        if instance.volunteer is None:
-            instance.status = "nije aktivan"
-
-        if old_volunteer is not None:
-            old_volunteer.status = False
-            old_volunteer.save()
-
-        if new_volunteer is not None:
-            new_volunteer.status = True
-            new_volunteer.save()
 
         instance.save()
         return instance
