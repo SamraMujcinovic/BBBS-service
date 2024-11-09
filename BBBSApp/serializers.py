@@ -355,11 +355,9 @@ class ChildSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Child
-        read_only_fields = ("id", "code")
+        read_only_fields = ("id",)
         fields = (
             "id",
-            "first_name",
-            "last_name",
             "code",
             "gender",
             "birth_date",
@@ -403,8 +401,9 @@ class ChildSerializer(serializers.ModelSerializer):
 
     @atomic  # used as transactional
     def create(self, validated_data):
-        first_name = validated_data["first_name"]
-        last_name = validated_data["last_name"]
+        code = validated_data["code"]
+        first_name = code
+        last_name = code
         gender = validated_data["gender"]
         birth_date = validated_data["birth_date"]
         school_status = validated_data["school_status"]
@@ -422,6 +421,7 @@ class ChildSerializer(serializers.ModelSerializer):
         new_child = Child.objects.create(
             first_name=first_name,
             last_name=last_name,
+            code=code,
             gender=gender,
             birth_date=birth_date,
             school_status=school_status,
@@ -456,7 +456,7 @@ class ChildSerializer(serializers.ModelSerializer):
         )
         organisation_city.save()
 
-        new_child.code = generateChildCode(new_child)
+        # new_child.code = generateChildCode(new_child)
         new_child.save()
 
         new_child.developmental_difficulties.set(developmental_difficulties)
