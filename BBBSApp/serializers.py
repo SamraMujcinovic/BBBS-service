@@ -371,6 +371,7 @@ class ChildSerializer(serializers.ModelSerializer):
             "health_difficulties",
             "active_pup",
             "passive_pup",
+            "something_else",
             "child_potential",
             "coordinator",
             "volunteer",
@@ -417,6 +418,7 @@ class ChildSerializer(serializers.ModelSerializer):
         active_pup = validated_data["active_pup"]
         passive_pup = validated_data["passive_pup"]
         child_potential = validated_data["child_potential"]
+        something_else = validated_data["something_else"]
         volunteer = validated_data.get("volunteer", None)
         new_child = Child.objects.create(
             first_name=first_name,
@@ -433,6 +435,7 @@ class ChildSerializer(serializers.ModelSerializer):
             active_pup=active_pup,
             passive_pup=passive_pup,
             child_potential=child_potential,
+            something_else=something_else,
             volunteer=volunteer,
         )
         new_child.save()
@@ -483,6 +486,7 @@ class ChildSerializer(serializers.ModelSerializer):
         instance.active_pup = validated_data["active_pup"]
         instance.passive_pup = validated_data["passive_pup"]
         instance.child_potential = validated_data["child_potential"]
+        instance.something_else = validated_data["something_else"]
 
         # set coordinator
         current_user = self.context["request"].user

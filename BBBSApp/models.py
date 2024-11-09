@@ -183,6 +183,7 @@ class Child(models.Model):
     active_pup = models.TextField(max_length=500, null=True, blank=True)
     passive_pup = models.TextField(max_length=500, null=True, blank=True)
     child_potential = models.TextField(max_length=500, null=True, blank=True)
+    something_else = models.TextField(max_length=500, null=True, blank=True)
     coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.CASCADE)
     volunteer = models.OneToOneField(
         Volunteer, on_delete=models.CASCADE, null=True, blank=True  # check what to do on delete
