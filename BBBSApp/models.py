@@ -273,10 +273,12 @@ class Form(models.Model):
     ACTIVITY_TYPE_DICT = {value: key for key, value in ACTIVITY_TYPE}
 
     BAD = 0
-    GOOD = 1
-    GREAT = 2
+    NOT_BAD = 1
+    GOOD = 2
+    GREAT = 3
     EVALUATION = (
         (BAD, "Loše"),
+        (NOT_BAD, "Nije loše"),
         (GOOD, "Dobro"),
         (GREAT, "Super"),
     )
