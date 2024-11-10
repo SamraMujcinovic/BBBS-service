@@ -372,7 +372,7 @@ class FormView(viewsets.ModelViewSet):
             permission_classes = [IsVolunteer]
         elif self.action == "list":
             permission_classes = [IsAdmin | IsCoordinator | IsVolunteer]
-        elif self.action == "delete":
+        elif self.action == "destroy":
             permission_classes = [IsAdmin | IsCoordinator]
         return [permission() for permission in permission_classes]
 
