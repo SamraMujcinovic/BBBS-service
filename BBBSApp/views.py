@@ -2,7 +2,7 @@ from datetime import datetime
 
 from django.core.mail import send_mail
 from django.utils.encoding import force_str, force_bytes
-from rest_framework.status import HTTP_409_CONFLICT
+from rest_framework.status import HTTP_409_CONFLICT, HTTP_403_FORBIDDEN
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
@@ -380,6 +380,8 @@ class FormView(viewsets.ModelViewSet):
         current_user = self.request.user
         form = self.get_object()
 
+        if isUserVolunteer(current_user):
+            return Response(status=HTTP_403_FORBIDDEN)
         if isUserCoordinator(current_user):
             # forbid cooridnators to delete forms that are not in his organisation
             accessible_forms_ids = set(get_accessible_forms(self.request.user).values_list('id', flat=True))
