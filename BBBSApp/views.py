@@ -376,6 +376,21 @@ class FormView(viewsets.ModelViewSet):
             permission_classes = [IsAdmin | IsCoordinator]
         return [permission() for permission in permission_classes]
 
+    def destroy(self, request, *args, **kwargs):
+        current_user = self.request.user
+        form = self.get_object()
+
+        if isUserCoordinator(current_user):
+            # forbid cooridnators to delete forms that are not in his organisation
+            accessible_forms_ids = set(get_accessible_forms(self.request.user).values_list('id', flat=True))
+            if form.id not in accessible_forms_ids:
+                return Response(
+                    {"error": "Coordinator is not allowed to delete forms from other organisations!"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+        return super().destroy(request, *args, **kwargs)
+
     # specify serializer to be used
     serializer_class = FormSerializer
 
