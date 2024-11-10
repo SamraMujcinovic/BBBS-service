@@ -6,6 +6,7 @@ from django.urls import path
 
 router = DefaultRouter()
 router.register(r"organisations", views.OrganisationView, basename="Organisation")
+router.register(r"organisations/<int:pk>/", views.OrganisationView, basename="Organisation")
 router.register(r"cities", views.CityView, basename="City")
 router.register(r"mentoring-reasons", views.MentoringReasonView, basename="Mentoring_Reason")
 router.register(r"mentoring-reasons-categories", views.MentoringReasonCategoryView, basename="Mentoring_Reason_Category")

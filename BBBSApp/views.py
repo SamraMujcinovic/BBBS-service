@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.core.mail import send_mail
 from django.utils.encoding import force_str, force_bytes
+from rest_framework.status import HTTP_409_CONFLICT
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
@@ -65,7 +66,8 @@ from .models import (
     Hang_Out_Place,
     Activities,
     Activity_Category,
-    Volunteer_Organisation_City
+    Volunteer_Organisation_City,
+    Child_Organisation_City
 )
 from django.contrib.auth.models import User
 
@@ -105,6 +107,8 @@ class OrganisationView(viewsets.ModelViewSet):
             permission_classes = [IsAdmin]
         elif self.action == "list":
             permission_classes = [IsCoordinator | IsAdmin | IsVolunteer]
+        elif self.action == "delete":
+            permission_classes = [IsAdmin]
         return [permission() for permission in permission_classes]
 
         # define queryset
@@ -126,7 +130,19 @@ class OrganisationView(viewsets.ModelViewSet):
             return Organisation.objects.filter(id=volunteer_organisation_city.organisation_id)
         return None
 
+    def destroy(self, request, *args, **kwargs):
+        organisation = self.get_object()
+
+        if checkIfOrganisationIsInUse(organisation.id):
+            return Response({"This organisation is being used by a coordinator, volunteer or child and cannot be deleted."},status=HTTP_409_CONFLICT)
+
+        # If no coordinators are associated, proceed with deletion
+        return super().destroy(request, *args, **kwargs)
+
     serializer_class = Organisation_Serializer
+
+def checkIfOrganisationIsInUse(organisation_id):
+    return Coordinator_Organisation_City.objects.filter(organisation_id=organisation_id).exists() or Volunteer_Organisation_City.objects.filter(organisation_id=organisation_id).exists() or Child_Organisation_City.objects.filter(organisation_id=organisation_id).exists()
 
 
 class CityView(viewsets.ModelViewSet):
@@ -181,6 +197,8 @@ class CoordinatorView(viewsets.ModelViewSet):
             permission_classes = [IsAdmin]
         elif self.action == "list":
             permission_classes = [IsCoordinator | IsAdmin]
+        elif self.action == "delete":
+            permission_classes = [IsAdmin]
         return [permission() for permission in permission_classes]
 
     # define queryset
@@ -261,6 +279,8 @@ class VolunteerView(viewsets.ModelViewSet):
             permission_classes = [IsAdmin | IsCoordinator]
         elif self.action == "list":
             permission_classes = [IsAdmin | IsCoordinator | IsVolunteer]
+        elif self.action == "delete":
+            permission_classes = [IsAdmin | IsCoordinator]
         return [permission() for permission in permission_classes]
 
     # specify serializer to be used
@@ -307,6 +327,8 @@ class ChildView(viewsets.ModelViewSet):
             permission_classes = [IsAdmin | IsCoordinator]
         elif self.action == "list":
             permission_classes = [IsAdmin | IsCoordinator]
+        elif self.action == "delete":
+            permission_classes = [IsAdmin | IsCoordinator]
         return [permission() for permission in permission_classes]
 
     # specify serializer to be used
@@ -350,6 +372,8 @@ class FormView(viewsets.ModelViewSet):
             permission_classes = [IsVolunteer]
         elif self.action == "list":
             permission_classes = [IsAdmin | IsCoordinator | IsVolunteer]
+        elif self.action == "delete":
+            permission_classes = [IsAdmin | IsCoordinator]
         return [permission() for permission in permission_classes]
 
     # specify serializer to be used
