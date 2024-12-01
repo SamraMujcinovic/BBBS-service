@@ -365,13 +365,36 @@ class ChildView(viewsets.ModelViewSet):
             permission_classes = [IsAdmin | IsCoordinator]
         elif self.action == "list":
             permission_classes = [IsAdmin | IsCoordinator]
-        elif self.action == "delete":
+        elif self.action == "destroy":
             permission_classes = [IsAdmin | IsCoordinator]
         return [permission() for permission in permission_classes]
+
+    def destroy(self, request, *args, **kwargs):
+        current_user = self.request.user
+        child = self.get_object()
+
+        if isUserVolunteer(current_user):
+            return Response(status=HTTP_403_FORBIDDEN)
+        if isUserCoordinator(current_user):
+            # forbid coordinators to delete child that are not in his organisation
+            coordinator = Coordinator.objects.filter(user_id=current_user.id).first()
+            if child.child_organisation.first().id != coordinator.coordinator_organisation.first().id or child.child_city.first().id != coordinator.coordinator_city.first().id:
+                return Response(
+                    {"error": "Coordinator is not allowed to delete child from other organisations!"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        if checkIfChildIsInUse(child.id):
+            return Response({"This child is being used by a volunteer and cannot be deleted."},status=HTTP_409_CONFLICT)
+
+
+        return super().destroy(request, *args, **kwargs)
 
     # specify serializer to be used
     serializer_class = ChildSerializer
 
+
+def checkIfChildIsInUse(child_id):
+    return Volunteer.objects.filter(child__id=child_id).exists()
 
 # create a viewset
 class FormView(viewsets.ModelViewSet):
