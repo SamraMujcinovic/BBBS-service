@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-from BBBSApp.utilis import CURRENT_DATE, PHONE_REGEX
+from BBBSApp.utilis import PHONE_REGEX
 
 
 class City(models.Model):
@@ -36,6 +36,13 @@ class Coordinator(models.Model):
 
     def __str__(self):
         return self.user.first_name + " " + self.user.last_name
+
+    def delete(self, *args, **kwargs):
+        # Delete the associated User
+        if self.user:
+            self.user.delete()
+        # Call the parent class's delete method
+        super().delete(*args, **kwargs)
 
 
 class Volunteer(models.Model):

@@ -197,7 +197,7 @@ class CoordinatorView(viewsets.ModelViewSet):
             permission_classes = [IsAdmin]
         elif self.action == "list":
             permission_classes = [IsCoordinator | IsAdmin]
-        elif self.action == "delete":
+        elif self.action == "destroy":
             permission_classes = [IsAdmin]
         return [permission() for permission in permission_classes]
 
@@ -218,8 +218,23 @@ class CoordinatorView(viewsets.ModelViewSet):
             return Coordinator.objects.filter(user_id=user.id)
         return None
 
+    def destroy(self, request, *args, **kwargs):
+        current_user = self.request.user
+        coordinator = self.get_object()
+
+        if isUserCoordinator(current_user) or isUserVolunteer(current_user):
+            return Response(status=HTTP_403_FORBIDDEN)
+        if checkIfCoordinatorIsInUse(coordinator.id):
+            return Response({"This coordinator is being used by a volunteer or child and cannot be deleted."},status=HTTP_409_CONFLICT)
+
+        return super().destroy(request, *args, **kwargs)
+
     # specify serializer to be used
     serializer_class = CoordinatorSerializer
+
+
+def checkIfCoordinatorIsInUse(coordinator_id):
+    return Volunteer.objects.filter(coordinator__id=coordinator_id).exists() or Child.objects.filter(coordinator__id=coordinator_id).exists()
 
 
 # create a viewset
