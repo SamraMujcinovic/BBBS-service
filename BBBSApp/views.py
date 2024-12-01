@@ -294,12 +294,35 @@ class VolunteerView(viewsets.ModelViewSet):
             permission_classes = [IsAdmin | IsCoordinator]
         elif self.action == "list":
             permission_classes = [IsAdmin | IsCoordinator | IsVolunteer]
-        elif self.action == "delete":
+        elif self.action == "destroy":
             permission_classes = [IsAdmin | IsCoordinator]
         return [permission() for permission in permission_classes]
 
+    def destroy(self, request, *args, **kwargs):
+        current_user = self.request.user
+        volunteer = self.get_object()
+
+        if isUserVolunteer(current_user):
+            return Response(status=HTTP_403_FORBIDDEN)
+        if isUserCoordinator(current_user):
+            # forbid coordinators to delete forms that are not in his organisation
+            coordinator = Coordinator.objects.filter(user_id=current_user.id).first()
+            if volunteer.volunteer_organisation.first().id != coordinator.coordinator_organisation.first().id or volunteer.volunteer_city.first().id != coordinator.coordinator_city.first().id:
+                return Response(
+                    {"error": "Coordinator is not allowed to delete volunteers from other organisations!"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        if checkIfVolunteerIsInUse(volunteer.id):
+            return Response({"This volunteer is being used by a child or form and cannot be deleted."},status=HTTP_409_CONFLICT)
+
+        return super().destroy(request, *args, **kwargs)
+
     # specify serializer to be used
     serializer_class = VolunteerSerializer
+
+
+def checkIfVolunteerIsInUse(volunteer_id):
+    return Child.objects.filter(volunteer__id=volunteer_id).exists() or Form.objects.filter(volunteer__id=volunteer_id).exists()
 
 
 # create a viewset

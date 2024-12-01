@@ -115,6 +115,13 @@ class Volunteer(models.Model):
     def __str__(self):
         return self.user.first_name + " " + self.user.last_name
 
+    def delete(self, *args, **kwargs):
+        # Delete the associated User
+        if self.user:
+            self.user.delete()
+        # Call the parent class's delete method
+        super().delete(*args, **kwargs)
+
 
 class Developmental_Difficulties(models.Model):
     name = models.CharField(max_length=80)
