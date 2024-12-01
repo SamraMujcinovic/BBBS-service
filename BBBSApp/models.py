@@ -85,7 +85,7 @@ class Volunteer(models.Model):
     )  # has first_name, last_name, username, password, email, group
     gender = models.CharField(max_length=1, choices=GENDER)
     birth_date = models.DateField(default='1990-01-01')
-    phone_number = models.CharField(validators=[PHONE_REGEX], max_length=9, null=True)
+    phone_number = models.CharField(validators=[PHONE_REGEX], max_length=10, null=True)
     education_level = models.CharField(choices=EDUCATION_LEVEL, max_length=15)
     faculty_department = models.CharField(choices=FACULTY_DEPARTMENT, max_length=100, default=PRIRODNI)
     faculty_other_department = models.TextField(null=True, blank=True)
