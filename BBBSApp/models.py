@@ -193,11 +193,11 @@ class Child(models.Model):
     status = models.CharField(choices=STATUS, max_length=70)
     guardian_consent = models.BooleanField()
     vaccination_status = models.BooleanField()
-    health_difficulties = models.TextField(max_length=500, null=True, blank=True)
-    active_pup = models.TextField(max_length=500, null=True, blank=True)
-    passive_pup = models.TextField(max_length=500, null=True, blank=True)
-    child_potential = models.TextField(max_length=500, null=True, blank=True)
-    something_else = models.TextField(max_length=500, null=True, blank=True)
+    health_difficulties = models.TextField(null=True, blank=True)
+    active_pup = models.TextField(null=True, blank=True)
+    passive_pup = models.TextField(null=True, blank=True)
+    child_potential = models.TextField(null=True, blank=True)
+    something_else = models.TextField(null=True, blank=True)
     coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.CASCADE)
     volunteer = models.OneToOneField(
         Volunteer, on_delete=models.CASCADE, null=True, blank=True  # check what to do on delete
@@ -306,5 +306,5 @@ class Form(models.Model):
     place = models.ManyToManyField(Hang_Out_Place, blank=True)
     evaluation = models.PositiveSmallIntegerField(choices=EVALUATION)
     activities = models.ManyToManyField(Activities, blank=True)
-    description = models.TextField(max_length=500, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
     volunteer = models.ForeignKey(Volunteer, on_delete=models.CASCADE, null=False)

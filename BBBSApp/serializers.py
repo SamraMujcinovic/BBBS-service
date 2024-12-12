@@ -624,11 +624,6 @@ class FormSerializer(serializers.ModelSerializer):
                     {"description": "Description has to include at least 50 words"}
                 )
 
-            if len(description_words) > 100:
-                raise serializers.ValidationError(
-                    {"description": "Description cannot have more than 100 words"}
-                )
-
         return data
 
     @atomic  # used as transactional
