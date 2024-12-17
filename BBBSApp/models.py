@@ -181,7 +181,7 @@ class Child(models.Model):
         (NOT_ACTIVE, "Dijete nije aktivno uključeno u program"),
     )
 
-    code = models.CharField(max_length=8)
+    code = models.CharField(max_length=50)
     first_name = models.CharField(max_length=10, blank=True)
     last_name = models.CharField(max_length=15, blank=True)
     gender = models.CharField(choices=GENDER, max_length=1)

@@ -578,12 +578,6 @@ class FormSerializer(serializers.ModelSerializer):
         return super(FormSerializer, self).to_representation(instance)
 
     def validate(self, data):
-        current_user = self.context["request"].user
-        volunteer = Volunteer.objects.filter(user_id=current_user.id).first()
-
-        if Form.objects.filter(date=data["date"], volunteer=volunteer).exists():
-            raise serializers.ValidationError({"303": "Entry already exists"})
-
         if len(data["place"]) > 3:
             raise serializers.ValidationError({"place": "Too many options selected"})
 
