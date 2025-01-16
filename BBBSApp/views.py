@@ -544,6 +544,9 @@ class FormsTotalHoursSumView(APIView):
 
     def get(self, request):
         resultset = get_accessible_forms(self.request.user)
+        if self.request.GET.get("organisationFilter") is not None:
+            organisation = self.request.GET.get("organisationFilter")
+            resultset = resultset.filter(volunteer__volunteer_organisation__id=organisation)
         if self.request.GET.get("volunteerFilter") is not None:
             volunteer = self.request.GET.get("volunteerFilter")
             resultset = resultset.filter(volunteer_id=volunteer)
