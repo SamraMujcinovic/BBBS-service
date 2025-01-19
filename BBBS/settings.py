@@ -70,6 +70,10 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
+CORS_EXPOSE_HEADERS = [
+    'Content-Disposition',  # Expose only necessary headers
+]
+
 ROOT_URLCONF = "BBBS.urls"
 
 TEMPLATES = [
@@ -97,13 +101,13 @@ WSGI_APPLICATION = "BBBS.wsgi.application"
 
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'bbbs',
-        'USER': 'dbusername',
-        'PASSWORD': 'Samra1711#',
-        'HOST': 'bbbs-database.cdycws4q4x4d.eu-north-1.rds.amazonaws.com',
-        'PORT': '5432',
+   "default": {
+       "ENGINE": "django.db.backends.postgresql_psycopg2",
+       "NAME": "bbbs",
+       "USER": "bbbsuser",
+       "PASSWORD": "password",
+       "HOST": "localhost",
+       "PORT": "5432",
     }
 }
 
@@ -150,7 +154,7 @@ SIMPLE_JWT = {
     'AUTH_COOKIE_SECURE': True,    # Whether the auth cookies should be secure (https:// only).
     'AUTH_COOKIE_HTTP_ONLY': True, # Http only cookie flag.It's not fetch by javascript.
     'AUTH_COOKIE_PATH': '/',        # The path of the auth cookie.
-    'AUTH_COOKIE_SAMESITE': 'None',  # Whether to set the flag restricting cookie leaks on cross-site requests. This can be 'Lax', 'Strict', or None to disable the flag.
+    'AUTH_COOKIE_SAMESITE': 'Lax',  # Whether to set the flag restricting cookie leaks on cross-site requests. This can be 'Lax', 'Strict', or None to disable the flag.
 
 }
 
@@ -210,4 +214,4 @@ STATIC_URL = "/static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CLIENT_URL = "https://bbbs-ui.vercel.app"
+CLIENT_URL = "http://localhost:3000"
