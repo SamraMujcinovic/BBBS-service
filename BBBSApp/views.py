@@ -803,7 +803,8 @@ class FormsExcelView(APIView):
         start_row = 2
         for row_idx, row in enumerate(data, start=start_row):
             volunteer_name = f"{row.volunteer.user.first_name} {row.volunteer.user.last_name}"
-            duration = row.activity_end_time - row.activity_start_time
+            organisation_name = row.volunteer.volunteer_organisation.first().name
+            duration = calculate_total_time_duration(row.duration)
             duration_minutes = duration if duration else 0
             places = "; ".join([place.name for place in row.place.all()]) if row.place.all() else ""
             activities = "; ".join([activity.name for activity in row.activities.all()]) if row.activities.all() else ""
@@ -811,17 +812,18 @@ class FormsExcelView(APIView):
 
             # Populate the template rows with data
             sheet.cell(row=row_idx, column=1).value = volunteer_name
-            sheet.cell(row=row_idx, column=2).value = row.date
-            sheet.cell(row=row_idx, column=2).style = date_style
-            sheet.cell(row=row_idx, column=3).value = duration_minutes
-            sheet.cell(row=row_idx, column=4).value = row.get_activity_type_display()
-            sheet.cell(row=row_idx, column=5).value = row.get_evaluation_display()
-            sheet.cell(row=row_idx, column=6).value = places
-            sheet.cell(row=row_idx, column=7).value = activities
-            sheet.cell(row=row_idx, column=8).value = description
+            sheet.cell(row=row_idx, column=2).value = organisation_name
+            sheet.cell(row=row_idx, column=3).value = row.date
+            sheet.cell(row=row_idx, column=3).style = date_style
+            sheet.cell(row=row_idx, column=4).value = duration_minutes
+            sheet.cell(row=row_idx, column=5).value = row.get_activity_type_display()
+            sheet.cell(row=row_idx, column=6).value = row.get_evaluation_display()
+            sheet.cell(row=row_idx, column=7).value = places
+            sheet.cell(row=row_idx, column=8).value = activities
+            sheet.cell(row=row_idx, column=9).value = description
 
             # Apply borders to all cells in the current row
-            for col_idx in range(1, 9):  # Adjust the range based on your columns
+            for col_idx in range(1, 10):  # Adjust the range based on your columns
                 cell = sheet.cell(row=row_idx, column=col_idx)
                 cell.border = thin_border
 
@@ -845,6 +847,16 @@ class FormsExcelView(APIView):
         return response
 
 
+def calculate_total_time_duration(number):
+    if not number:
+        return "0h 0min"
+
+    number = round(float(number), 2)
+    hours = int(number)
+    minutes = (number - hours) * 60
+
+    return f"{hours}h {round(minutes)}min"
+
 def getFormsExcelFileName(filters):
     """
     Generate a filename for the Excel file based on the provided filters in the request.
@@ -862,6 +874,9 @@ def getFormsExcelFileName(filters):
     if organisation != '':
         organisation = Organisation.objects.get(pk=organisation).name
     volunteer = filters.get('volunteerFilter', '')  # Use 'all' if no activity type is specified
+    if volunteer != '':
+        volunteer_obj = Volunteer.objects.get(pk=volunteer)
+        volunteer = f"{volunteer_obj.user.first_name}_{volunteer_obj.user.last_name}"
     activity_type = filters.get('activityTypeFilter', '')  # Use 'all' if no activity type is specified
 
 
