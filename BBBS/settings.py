@@ -70,6 +70,10 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
+CORS_EXPOSE_HEADERS = [
+    'Content-Disposition',  # Expose only necessary headers
+]
+
 ROOT_URLCONF = "BBBS.urls"
 
 TEMPLATES = [

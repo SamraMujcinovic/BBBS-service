@@ -41,4 +41,5 @@ urlpatterns = [
     path("password/reset/confirm", views.PasswordResetConfirmView.as_view(), name="password_reset_confirm_view"),
     path("reminders", views.EmailRemindersView.as_view(), name="reminder_emails"),
     path("forms/totals", views.FormsTotalHoursSumView.as_view(), name="forms_total_hours"),
+    path("forms/download", views.FormsExcelView.as_view(), name="forms_excel_download")
 ]

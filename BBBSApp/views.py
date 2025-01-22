@@ -1,7 +1,12 @@
+import os
 from datetime import datetime
+from io import BytesIO
 
+import openpyxl
 from django.core.mail import send_mail
+from django.http import HttpResponse
 from django.utils.encoding import force_str, force_bytes
+from openpyxl.styles import NamedStyle, Border, Side
 from rest_framework.status import HTTP_409_CONFLICT, HTTP_403_FORBIDDEN
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import (
@@ -402,30 +407,7 @@ class FormView(viewsets.ModelViewSet):
     pagination_class = CustomPagination
     # define queryset
     def get_queryset(self):
-        resultset = get_accessible_forms(self.request.user)
-        if self.request.GET.get("organisationFilter") is not None:
-            organisation = self.request.GET.get("organisationFilter")
-            resultset = resultset.filter(volunteer__volunteer_organisation__id=organisation)
-            if not resultset:
-                return resultset
-        if self.request.GET.get("volunteerFilter") is not None:
-            volunteer = self.request.GET.get("volunteerFilter")
-            resultset = resultset.filter(volunteer_id=volunteer)
-            if not resultset:
-                return resultset
-        if self.request.GET.get("activityTypeFilter") is not None:
-            activity_type = self.request.GET.get("activityTypeFilter")
-            resultset = resultset.filter(activity_type=Form.ACTIVITY_TYPE_DICT.get(activity_type))
-            if not resultset:
-                return resultset
-        if self.request.GET.get("startDate") is not None and self.request.GET.get("endDate") is not None:
-            start_date = self.request.GET.get("startDate")
-            end_date = self.request.GET.get("endDate")
-            resultset = resultset.filter(date__range=[start_date, end_date])
-            if not resultset:
-                return resultset
-
-        return resultset
+        return filter_accessible_forms(self.request.user, self.request.GET)
 
     def get_permissions(self):
         permission_classes = []
@@ -473,6 +455,33 @@ def get_accessible_forms(current_user):
         volunteer = Volunteer.objects.get(user_id=current_user.id)
         return Form.objects.filter(volunteer=volunteer.id).order_by("-date")
     return None
+
+
+def filter_accessible_forms(current_user, filters):
+    resultset = get_accessible_forms(current_user)
+    if filters.get("organisationFilter") is not None:
+        organisation = filters.get("organisationFilter")
+        resultset = resultset.filter(volunteer__volunteer_organisation__id=organisation)
+        if not resultset:
+            return resultset
+    if filters.get("volunteerFilter") is not None:
+        volunteer = filters.get("volunteerFilter")
+        resultset = resultset.filter(volunteer_id=volunteer)
+        if not resultset:
+            return resultset
+    if filters.get("activityTypeFilter") is not None:
+        activity_type = filters.get("activityTypeFilter")
+        resultset = resultset.filter(activity_type=Form.ACTIVITY_TYPE_DICT.get(activity_type))
+        if not resultset:
+            return resultset
+    if filters.get("startDate") is not None and filters.get("endDate") is not None:
+        start_date = filters.get("startDate")
+        end_date = filters.get("endDate")
+        resultset = resultset.filter(date__range=[start_date, end_date])
+        if not resultset:
+            return resultset
+
+    return  resultset
 
 
 class VolunteerHours(viewsets.ModelViewSet):
@@ -757,5 +766,153 @@ class ActivateUser(APIView):
                 return Response({'error': 'Invalid token or token expired.'}, status=status.HTTP_400_BAD_REQUEST)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             return Response({'error': 'Invalid activation link.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class FormsExcelView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        # Load the predefined Excel template
+        template_path = os.path.join(os.path.dirname(__file__), "templates",
+                                     "forms.xlsx")  # Update with the path to your template
+        try:
+            workbook = openpyxl.load_workbook(template_path)
+        except Exception as e:
+            print(f"Error loading template: {e}")
+            raise
+
+        # Access the desired sheet in the template
+        sheet = workbook.active
+
+        # Define a thin border style
+        thin_border = Border(
+            left=Side(style="thin"),
+            right=Side(style="thin"),
+            top=Side(style="thin"),
+            bottom=Side(style="thin"),
+        )
+
+        # Define a date style (if needed)
+        date_style = NamedStyle(name="date_style", number_format="DD.MM.YYYY")
+
+        # Fetch and process the data
+        data = filter_accessible_forms(self.request.user, self.request.GET)
+
+        # Start filling data from the second row (assuming the template already has a header)
+        start_row = 2
+        for row_idx, row in enumerate(data, start=start_row):
+            volunteer_name = f"{row.volunteer.user.first_name} {row.volunteer.user.last_name}"
+            organisation_name = row.volunteer.volunteer_organisation.first().name
+            duration = calculate_total_time_duration(row.duration)
+            duration_minutes = duration if duration else 0
+            places = "; ".join([place.name for place in row.place.all()]) if row.place.all() else ""
+            activities = "; ".join([activity.name for activity in row.activities.all()]) if row.activities.all() else ""
+            description = row.description if row.description is not None else ""
+
+            # Populate the template rows with data
+            sheet.cell(row=row_idx, column=1).value = volunteer_name
+            sheet.cell(row=row_idx, column=2).value = organisation_name
+            sheet.cell(row=row_idx, column=3).value = row.date
+            sheet.cell(row=row_idx, column=3).style = date_style
+            sheet.cell(row=row_idx, column=4).value = duration_minutes
+            sheet.cell(row=row_idx, column=5).value = row.get_activity_type_display()
+            sheet.cell(row=row_idx, column=6).value = row.get_evaluation_display()
+            sheet.cell(row=row_idx, column=7).value = places
+            sheet.cell(row=row_idx, column=8).value = activities
+            sheet.cell(row=row_idx, column=9).value = description
+
+            # Apply borders to all cells in the current row
+            for col_idx in range(1, 10):  # Adjust the range based on your columns
+                cell = sheet.cell(row=row_idx, column=col_idx)
+                cell.border = thin_border
+
+        # Save the file to a BytesIO object to send it as an HTTP response
+        file_stream = BytesIO()
+        workbook.save(file_stream)
+        file_stream.seek(0)
+
+        # Prepare the HttpResponse with the filled template
+        filename = getFormsExcelFileName(self.request.GET)
+        print(f"Generated filename: {filename}")
+
+        response = HttpResponse(
+            file_stream.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+
+        # Set the dynamic filename in the response header
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        return response
+
+
+def calculate_total_time_duration(number):
+    if not number:
+        return "0h 0min"
+
+    number = round(float(number), 2)
+    hours = int(number)
+    minutes = (number - hours) * 60
+
+    return f"{hours}h {round(minutes)}min"
+
+def getFormsExcelFileName(filters):
+    """
+    Generate a filename for the Excel file based on the provided filters in the request.
+
+    Args:
+        request: Django request object containing GET parameters.
+
+    Returns:
+        str: A sanitized filename based on the filters.
+    """
+    # Get filters from the request with default fallback values
+    start_date = filters.get('startDate', '')  # Use 'all' if no date is specified
+    end_date = filters.get('endDate', '')  # Use 'all' if no activity type is specified
+    organisation = filters.get('organisationFilter', '')  # Use 'all' if no activity type is specified
+    if organisation != '':
+        organisation = Organisation.objects.get(pk=organisation).name
+    volunteer = filters.get('volunteerFilter', '')  # Use 'all' if no activity type is specified
+    if volunteer != '':
+        volunteer_obj = Volunteer.objects.get(pk=volunteer)
+        volunteer = f"{volunteer_obj.user.first_name}_{volunteer_obj.user.last_name}"
+    activity_type = filters.get('activityTypeFilter', '')  # Use 'all' if no activity type is specified
+
+
+    # Sanitize filter values to make them safe for filenames
+    def sanitize_filename(value):
+        return value.replace(" ", "_").replace("/", "-").replace("\\", "-")
+
+    def replace_special_characters(filename):
+        replacements = {
+            'č': 'c',
+            'ć': 'c',
+            'š': 's',
+            'ž': 'z',
+            'đ': 'dj',
+            # You can add more replacements if needed
+        }
+        for char, replacement in replacements.items():
+            filename = filename.replace(char, replacement)
+
+        return filename
+
+    start_date = sanitize_filename(start_date)
+    end_date = sanitize_filename(end_date)
+    organisation = sanitize_filename(organisation)
+    volunteer = sanitize_filename(volunteer)
+    activity_type = sanitize_filename(activity_type)
+
+
+    # Construct the filename
+    filename = f"Forme_{start_date}_{end_date}"
+    if organisation:
+        filename = filename + f"_{organisation}"
+    if volunteer:
+        filename = filename + f"_{volunteer}"
+    if activity_type:
+        filename = filename + f"_{activity_type}"
+    return replace_special_characters(filename) + ".xlsx"
 
 
