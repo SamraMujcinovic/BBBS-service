@@ -249,49 +249,7 @@ class VolunteerView(viewsets.ModelViewSet):
     # define queryset
     def get_queryset(self):
         user = self.request.user
-        resultset = []
-        if isUserAdmin(user):
-            resultset = Volunteer.objects.all()
-        if isUserCoordinator(user):
-            # allow coordinators to see volunteers from his organisation and city
-            coordinator = Coordinator.objects.get(user_id=user.id)
-            coordinator_organisation_city = Coordinator_Organisation_City.objects.get(
-                coordinator_id=coordinator.id
-            )
-            resultset = Volunteer.objects.filter(
-                volunteer_organisation=coordinator_organisation_city.organisation_id,
-                volunteer_city=coordinator_organisation_city.city_id
-            ).order_by('user__first_name', 'user__last_name')
-        if isUserVolunteer(user):
-            resultset = Volunteer.objects.filter(user_id=user.id)
-
-        # when organisation filter is selected, get data from thar org only
-        if self.request.GET.get("organisationFilter") is not None:
-            organisation = self.request.GET.get("organisationFilter")
-            return resultset.filter(volunteer_organisation=organisation)
-
-        if self.request.GET.get("status") is not None:
-            volunteer_status = self.request.GET.get("status")
-            resultset = resultset.filter(status=volunteer_status)
-        if self.request.GET.get("gender") is not None:
-            volunteer_gender = self.request.GET.get("gender")
-            resultset = resultset.filter(gender=volunteer_gender)
-        if self.request.GET.get("organisation") is not None:
-            volunteer_organisation = self.request.GET.get("organisation")
-            resultset = resultset.filter(volunteer_organisation=volunteer_organisation)
-        if self.request.GET.get("city") is not None:
-            volunteer_city = self.request.GET.get("city")
-            resultset = resultset.filter(volunteer_city=volunteer_city)
-        if (self.request.GET.get("availableVolunteers") is not None and
-                self.request.GET.get("availableVolunteers") == "True"):
-            resultset = resultset.filter(child=None)
-        if self.request.GET.get("child") is not None:
-            child_volunteer = Volunteer.objects.filter(child=self.request.GET.get("child"))
-            # add current childs volunteer to list of accessible volunteers
-            if child_volunteer.first() is not None:
-                resultset = resultset | child_volunteer
-
-        return resultset.order_by('volunteer_organisation', 'volunteer_city', 'user__first_name', 'user__last_name')
+        return get_accessible_volunteers(user, self.request.GET)
 
     def get_permissions(self):
         permission_classes = []
@@ -324,6 +282,52 @@ class VolunteerView(viewsets.ModelViewSet):
 
     # specify serializer to be used
     serializer_class = VolunteerSerializer
+
+
+def get_accessible_volunteers(user, filters):
+    resultset = []
+    if isUserAdmin(user):
+        resultset = Volunteer.objects.all()
+    if isUserCoordinator(user):
+        # allow coordinators to see volunteers from his organisation and city
+        coordinator = Coordinator.objects.get(user_id=user.id)
+        coordinator_organisation_city = Coordinator_Organisation_City.objects.get(
+            coordinator_id=coordinator.id
+        )
+        resultset = Volunteer.objects.filter(
+            volunteer_organisation=coordinator_organisation_city.organisation_id,
+            volunteer_city=coordinator_organisation_city.city_id
+        ).order_by('user__first_name', 'user__last_name')
+    if isUserVolunteer(user):
+        resultset = Volunteer.objects.filter(user_id=user.id)
+
+    # when organisation filter is selected, get data from thar org only
+    if filters.get("organisationFilter") is not None:
+        organisation = filters.get("organisationFilter")
+        return resultset.filter(volunteer_organisation=organisation)
+
+    if filters.get("status") is not None:
+        volunteer_status = filters.get("status")
+        resultset = resultset.filter(status=volunteer_status)
+    if filters.get("gender") is not None:
+        volunteer_gender = filters.get("gender")
+        resultset = resultset.filter(gender=volunteer_gender)
+    if filters.get("organisation") is not None:
+        volunteer_organisation = filters.get("organisation")
+        resultset = resultset.filter(volunteer_organisation=volunteer_organisation)
+    if filters.get("city") is not None:
+        volunteer_city = filters.get("city")
+        resultset = resultset.filter(volunteer_city=volunteer_city)
+    if (filters.get("availableVolunteers") is not None and
+            filters.get("availableVolunteers") == "True"):
+        resultset = resultset.filter(child=None)
+    if filters.get("child") is not None:
+        child_volunteer = Volunteer.objects.filter(child=filters.get("child"))
+        # add current childs volunteer to list of accessible volunteers
+        if child_volunteer.first() is not None:
+            resultset = resultset | child_volunteer
+
+    return resultset.order_by('volunteer_organisation', 'volunteer_city', 'user__first_name', 'user__last_name')
 
 
 def checkIfVolunteerIsInUse(volunteer_id):
@@ -773,89 +777,70 @@ class FormsExcelView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        # Load the predefined Excel template
-        template_path = os.path.join(os.path.dirname(__file__), "templates",
-                                     "forms.xlsx")  # Update with the path to your template
-        try:
-            workbook = openpyxl.load_workbook(template_path)
-        except Exception as e:
-            print(f"Error loading template: {e}")
-            raise
-
-        # Access the desired sheet in the template
-        sheet = workbook.active
-
-        # Define a thin border style
-        thin_border = Border(
-            left=Side(style="thin"),
-            right=Side(style="thin"),
-            top=Side(style="thin"),
-            bottom=Side(style="thin"),
-        )
-
-        # Define a date style (if needed)
-        date_style = NamedStyle(name="date_style", number_format="DD.MM.YYYY")
-
-        # Fetch and process the data
         data = filter_accessible_forms(self.request.user, self.request.GET)
-
-        # Start filling data from the second row (assuming the template already has a header)
-        start_row = 2
-        for row_idx, row in enumerate(data, start=start_row):
-            volunteer_name = f"{row.volunteer.user.first_name} {row.volunteer.user.last_name}"
-            organisation_name = row.volunteer.volunteer_organisation.first().name
-            duration = calculate_total_time_duration(row.duration)
-            duration_minutes = duration if duration else 0
-            places = "; ".join([place.name for place in row.place.all()]) if row.place.all() else ""
-            activities = "; ".join([activity.name for activity in row.activities.all()]) if row.activities.all() else ""
-            description = row.description if row.description is not None else ""
-
-            # Populate the template rows with data
-            sheet.cell(row=row_idx, column=1).value = volunteer_name
-            sheet.cell(row=row_idx, column=2).value = organisation_name
-            sheet.cell(row=row_idx, column=3).value = row.date
-            sheet.cell(row=row_idx, column=3).style = date_style
-            sheet.cell(row=row_idx, column=4).value = duration_minutes
-            sheet.cell(row=row_idx, column=5).value = row.get_activity_type_display()
-            sheet.cell(row=row_idx, column=6).value = row.get_evaluation_display()
-            sheet.cell(row=row_idx, column=7).value = places
-            sheet.cell(row=row_idx, column=8).value = activities
-            sheet.cell(row=row_idx, column=9).value = description
-
-            # Apply borders to all cells in the current row
-            for col_idx in range(1, 10):  # Adjust the range based on your columns
-                cell = sheet.cell(row=row_idx, column=col_idx)
-                cell.border = thin_border
-
-        # Save the file to a BytesIO object to send it as an HTTP response
-        file_stream = BytesIO()
-        workbook.save(file_stream)
-        file_stream.seek(0)
-
-        # Prepare the HttpResponse with the filled template
-        filename = getFormsExcelFileName(self.request.GET)
-        print(f"Generated filename: {filename}")
-
-        response = HttpResponse(
-            file_stream.read(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        )
-
-        # Set the dynamic filename in the response header
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-
-        return response
+        return excel_file_generation(data, "forms", fill_rows_in_forms_excel, 10, getFormsExcelFileName(self.request.GET))
 
 
-def calculate_total_time_duration(number):
-    if not number:
-        return "0h 0min"
 
-    number = round(float(number), 2)
-    hours = int(number)
-    minutes = (number - hours) * 60
+class VolunteersExcelView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = (IsAuthenticated,)
 
-    return f"{hours}h {round(minutes)}min"
+    def get(self, request):
+        data = get_accessible_volunteers(self.request.user, self.request.GET)
+        return excel_file_generation(data, "volunteers", fill_rows_in_volunteers_excel, 14, getVolunteersExcelFileName(self.request.GET))
+
+
+def excel_file_generation(data, template_name, function, number_of_columns, file_name):
+    # Load the predefined Excel template
+    template_path = os.path.join(os.path.dirname(__file__), "templates",
+                                 f"{template_name}.xlsx")  # Update with the path to your template
+    try:
+        workbook = openpyxl.load_workbook(template_path)
+    except Exception as e:
+        print(f"Error loading template: {e}")
+        raise
+
+    # Access the desired sheet in the template
+    sheet = workbook.active
+
+    # Define a thin border style
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
+
+    # Define a date style (if needed)
+    date_style = NamedStyle(name="date_style", number_format="DD.MM.YYYY")
+
+    # Start filling data from the second row (assuming the template already has a header)
+    start_row = 2
+    for row_idx, row in enumerate(data, start=start_row):
+        function(sheet, row, row_idx, date_style)
+
+        # Apply borders to all cells in the current row
+        for col_idx in range(1, number_of_columns):  # Adjust the range based on your columns
+            cell = sheet.cell(row=row_idx, column=col_idx)
+            cell.border = thin_border
+
+    # Save the file to a BytesIO object to send it as an HTTP response
+    file_stream = BytesIO()
+    workbook.save(file_stream)
+    file_stream.seek(0)
+
+    # Prepare the HttpResponse with the filled template
+    response = HttpResponse(
+        file_stream.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+
+    # Set the dynamic filename in the response header
+    response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+
+    return response
+
 
 def getFormsExcelFileName(filters):
     """
@@ -879,31 +864,11 @@ def getFormsExcelFileName(filters):
         volunteer = f"{volunteer_obj.user.first_name}_{volunteer_obj.user.last_name}"
     activity_type = filters.get('activityTypeFilter', '')  # Use 'all' if no activity type is specified
 
-
-    # Sanitize filter values to make them safe for filenames
-    def sanitize_filename(value):
-        return value.replace(" ", "_").replace("/", "-").replace("\\", "-")
-
-    def replace_special_characters(filename):
-        replacements = {
-            'č': 'c',
-            'ć': 'c',
-            'š': 's',
-            'ž': 'z',
-            'đ': 'dj',
-            # You can add more replacements if needed
-        }
-        for char, replacement in replacements.items():
-            filename = filename.replace(char, replacement)
-
-        return filename
-
     start_date = sanitize_filename(start_date)
     end_date = sanitize_filename(end_date)
     organisation = sanitize_filename(organisation)
     volunteer = sanitize_filename(volunteer)
     activity_type = sanitize_filename(activity_type)
-
 
     # Construct the filename
     filename = f"Forme_{start_date}_{end_date}"
@@ -915,4 +880,115 @@ def getFormsExcelFileName(filters):
         filename = filename + f"_{activity_type}"
     return replace_special_characters(filename) + ".xlsx"
 
+
+ # Sanitize filter values to make them safe for filenames
+def sanitize_filename(value):
+    return value.replace(" ", "_").replace("/", "-").replace("\\", "-")
+
+
+def replace_special_characters(filename):
+    replacements = {
+        'č': 'c',
+        'ć': 'c',
+        'š': 's',
+        'ž': 'z',
+        'đ': 'dj',
+    }
+    for char, replacement in replacements.items():
+        filename = filename.replace(char, replacement)
+
+    return filename
+
+
+def fill_rows_in_forms_excel(sheet, row, row_idx, date_style):
+    volunteer_name = f"{row.volunteer.user.first_name} {row.volunteer.user.last_name}"
+    organisation_name = row.volunteer.volunteer_organisation.first().name
+    duration = calculate_total_time_duration(row.duration)
+    duration_minutes = duration if duration else 0
+    places = "; ".join([place.name for place in row.place.all()]) if row.place.all() else ""
+    activities = "; ".join([activity.name for activity in row.activities.all()]) if row.activities.all() else ""
+    description = row.description if row.description is not None else ""
+
+    # Populate the template rows with data
+    sheet.cell(row=row_idx, column=1).value = volunteer_name
+    sheet.cell(row=row_idx, column=2).value = organisation_name
+    sheet.cell(row=row_idx, column=3).value = row.date
+    sheet.cell(row=row_idx, column=3).style = date_style
+    sheet.cell(row=row_idx, column=4).value = duration_minutes
+    sheet.cell(row=row_idx, column=5).value = row.get_activity_type_display()
+    sheet.cell(row=row_idx, column=6).value = row.get_evaluation_display()
+    sheet.cell(row=row_idx, column=7).value = places
+    sheet.cell(row=row_idx, column=8).value = activities
+    sheet.cell(row=row_idx, column=9).value = description
+
+
+
+def calculate_total_time_duration(number):
+    if not number:
+        return "0h 0min"
+
+    number = round(float(number), 2)
+    hours = int(number)
+    minutes = (number - hours) * 60
+
+    return f"{hours}h {round(minutes)}min"
+
+
+def fill_rows_in_volunteers_excel(sheet, row, row_idx, date_style):
+    volunteer_name = f"{row.user.first_name}"
+    volunteer_last_name = f"{row.user.last_name}"
+    organisation_name = row.volunteer_organisation.first().name
+    email = row.user.email
+    phone_number = row.phone_number
+    birth_date = row.birth_date
+    age = calculate_age(birth_date)
+    child = str(row.child) if hasattr(row, 'child') and row.child is not None else ""
+
+    # Populate the template rows with data
+    sheet.cell(row=row_idx, column=1).value = volunteer_name
+    sheet.cell(row=row_idx, column=2).value = volunteer_last_name
+    sheet.cell(row=row_idx, column=3).value = organisation_name
+    sheet.cell(row=row_idx, column=4).value = email
+    sheet.cell(row=row_idx, column=5).value = phone_number
+    sheet.cell(row=row_idx, column=6).value = birth_date
+    sheet.cell(row=row_idx, column=6).style = date_style
+    sheet.cell(row=row_idx, column=7).value = age
+    sheet.cell(row=row_idx, column=8).value = row.get_gender_display()
+    sheet.cell(row=row_idx, column=9).value = child
+    sheet.cell(row=row_idx, column=10).value = "Aktivan/na" if row.status else "Nije aktivan/na"
+    sheet.cell(row=row_idx, column=11).value = "Posjeduje" if row.good_conduct_certificate else "Ne posjeduje"
+    sheet.cell(row=row_idx, column=12).value = row.get_education_level_display()
+    sheet.cell(row=row_idx, column=13).value = row.get_faculty_department_display() if row.faculty_department is not None else row.faculty_other_department
+    sheet.cell(row=row_idx, column=14).value = row.get_employment_status_display()
+
+
+
+def calculate_age(birth_date):
+    today = datetime.today().date()
+    age = today.year - birth_date.year #- ((today.month, today.day) < (birth_date.month, birth_date.day))
+    return age
+
+
+
+def getVolunteersExcelFileName(filters):
+    """
+    Generate a filename for the Excel file based on the provided filters in the request.
+
+    Args:
+        request: Django request object containing GET parameters.
+
+    Returns:
+        str: A sanitized filename based on the filters.
+    """
+    organisation = filters.get('organisationFilter', '')  # Use 'all' if no activity type is specified
+    if organisation != '':
+        organisation = Organisation.objects.get(pk=organisation).name
+
+    organisation = sanitize_filename(organisation)
+
+    filename = "Volonteri"
+    if organisation:
+        filename = filename + f"_{organisation}"
+
+    return replace_special_characters(filename) + ".xlsx"
 
