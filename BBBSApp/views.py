@@ -341,32 +341,8 @@ class ChildView(viewsets.ModelViewSet):
     # define queryset
     def get_queryset(self):
         user = self.request.user
-        resultset = []
-        if isUserAdmin(user):
-            resultset = Child.objects.all()
-        if isUserCoordinator(user):
-            # allow coordinators to see childs from his organisation and city
-            coordinator = Coordinator.objects.get(user_id=user.id)
-            coordinator_organisation_city = Coordinator_Organisation_City.objects.get(
-                coordinator_id=coordinator.id
-            )
-            resultset = Child.objects.filter(
-                child_organisation=coordinator_organisation_city.organisation_id,
-                child_city=coordinator_organisation_city.city_id
-            )
+        return get_accessible_childs(user, self.request.GET)
 
-        # when organisation filter is selected, get data from that org only
-        if self.request.GET.get("organisationFilter") is not None:
-            organisation = self.request.GET.get("organisationFilter")
-            return resultset.filter(child_organisation=organisation)
-
-        if self.request.GET.get("organisation") is not None:
-            child_organisation = self.request.GET.get("organisation")
-            resultset = resultset.filter(child_organisation=child_organisation)
-        if self.request.GET.get("city") is not None:
-            child_city = self.request.GET.get("city")
-            resultset = resultset.filter(child_city=child_city)
-        return resultset.order_by('child_organisation', 'child_city', 'code')
 
     def get_permissions(self):
         permission_classes = []
@@ -400,6 +376,35 @@ class ChildView(viewsets.ModelViewSet):
 
     # specify serializer to be used
     serializer_class = ChildSerializer
+
+
+def get_accessible_childs(user, filters):
+    resultset = []
+    if isUserAdmin(user):
+        resultset = Child.objects.all()
+    if isUserCoordinator(user):
+        # allow coordinators to see childs from his organisation and city
+        coordinator = Coordinator.objects.get(user_id=user.id)
+        coordinator_organisation_city = Coordinator_Organisation_City.objects.get(
+            coordinator_id=coordinator.id
+        )
+        resultset = Child.objects.filter(
+            child_organisation=coordinator_organisation_city.organisation_id,
+            child_city=coordinator_organisation_city.city_id
+        )
+
+    # when organisation filter is selected, get data from that org only
+    if filters.get("organisationFilter") is not None:
+        organisation = filters.get("organisationFilter")
+        return resultset.filter(child_organisation=organisation)
+
+    if filters.get("organisation") is not None:
+        child_organisation = filters.get("organisation")
+        resultset = resultset.filter(child_organisation=child_organisation)
+    if filters.get("city") is not None:
+        child_city = filters.get("city")
+        resultset = resultset.filter(child_city=child_city)
+    return resultset.order_by('child_organisation', 'child_city', 'code')
 
 
 def checkIfChildIsInUse(child_id):
@@ -791,6 +796,15 @@ class VolunteersExcelView(APIView):
         return excel_file_generation(data, "volunteers", fill_rows_in_volunteers_excel, 14, getVolunteersExcelFileName(self.request.GET))
 
 
+class ChildsExcelView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        data = get_accessible_childs(self.request.user, self.request.GET)
+        return excel_file_generation(data, "childs", fill_rows_in_childs_excel, 20, getChildsExcelFileName(self.request.GET))
+
+
 def excel_file_generation(data, template_name, function, number_of_columns, file_name):
     # Load the predefined Excel template
     template_path = os.path.join(os.path.dirname(__file__), "templates",
@@ -992,3 +1006,58 @@ def getVolunteersExcelFileName(filters):
 
     return replace_special_characters(filename) + ".xlsx"
 
+
+def fill_rows_in_childs_excel(sheet, row, row_idx, date_style):
+    organisation_name = row.child_organisation.first().name
+    volunteer = str(row.volunteer) if hasattr(row, 'volunteer') and row.volunteer is not None else ""
+    developmental_difficulties = "; ".join([activity.name for activity in row.developmental_difficulties.all()]) if row.developmental_difficulties.all() else ""
+    developmental_difficulties = developmental_difficulties + (f": {row.health_difficulties}" if row.health_difficulties is not None and row.health_difficulties != "" else "")
+    category_dict = {category.name: [] for category in Mentoring_Reason_Category.objects.all()}
+
+    for reason in row.mentoring_reason.all():
+        category_dict[reason.category.name].append(reason.name)
+
+    # Populate the template rows with data
+    sheet.cell(row=row_idx, column=1).value = row.code
+    sheet.cell(row=row_idx, column=2).value = organisation_name
+    sheet.cell(row=row_idx, column=3).value = row.birth_date
+    sheet.cell(row=row_idx, column=3).style = date_style
+    sheet.cell(row=row_idx, column=4).value = calculate_age(row.birth_date)
+    sheet.cell(row=row_idx, column=5).value = row.get_gender_display()
+    sheet.cell(row=row_idx, column=6).value = volunteer
+    sheet.cell(row=row_idx, column=7).value = row.get_status_display()
+    sheet.cell(row=row_idx, column=8).value = "Posjeduje" if row.guardian_consent else "Ne posjeduje"
+    sheet.cell(row=row_idx, column=9).value = "Da" if row.vaccination_status else "Ne"
+    sheet.cell(row=row_idx, column=10).value = row.get_family_model_display()
+    sheet.cell(row=row_idx, column=11).value = row.get_school_status_display()
+    sheet.cell(row=row_idx, column=12).value = developmental_difficulties
+    for col_idx, category in enumerate(category_dict.keys(), start=13):
+        sheet.cell(row=row_idx, column=col_idx).value = "; ".join(category_dict[category])
+
+    sheet.cell(row=row_idx, column=17).value = row.something_else
+
+    sheet.cell(row=row_idx, column=18).value = row.active_pup if row.active_pup is not None else ""
+    sheet.cell(row=row_idx, column=19).value = row.child_potential if row.child_potential is not None else ""
+
+
+def getChildsExcelFileName(filters):
+    """
+    Generate a filename for the Excel file based on the provided filters in the request.
+
+    Args:
+        request: Django request object containing GET parameters.
+
+    Returns:
+        str: A sanitized filename based on the filters.
+    """
+    organisation = filters.get('organisationFilter', '')  # Use 'all' if no activity type is specified
+    if organisation != '':
+        organisation = Organisation.objects.get(pk=organisation).name
+
+    organisation = sanitize_filename(organisation)
+
+    filename = "Djeca"
+    if organisation:
+        filename = filename + f"_{organisation}"
+
+    return replace_special_characters(filename) + ".xlsx"
