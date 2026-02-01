@@ -26,7 +26,8 @@ from .models import (
     Developmental_Difficulties,
     Hang_Out_Place,
     Activities,
-    Activity_Category
+    Activity_Category,
+    Bill
 )
 
 
@@ -570,10 +571,17 @@ class ActivitiesSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "activity_category")
 
 
+class BillSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bill
+        fields = ['id', 'place', 'amount']
+
+
 class FormSerializer(serializers.ModelSerializer):
     date = serializers.DateField(format="%d.%m.%Y", input_formats=["%d.%m.%Y"])
     activity_type = ChoiceField(choices=Form.ACTIVITY_TYPE)
     evaluation = ChoiceField(choices=Form.EVALUATION)
+    bills = BillSerializer(many=True, required=False)
 
     class Meta:
         model = Form
@@ -589,12 +597,14 @@ class FormSerializer(serializers.ModelSerializer):
             "evaluation",
             "activities",
             "description",
+            "bills"
         )
 
     def to_representation(self, instance):
         self.fields["volunteer"] = VolunteerSerializer(read_only=True)
         self.fields["place"] = HangOutPlaceSerializer(many=True, read_only=True)
         self.fields["activities"] = ActivitiesSerializer(many=True, read_only=True)
+        self.fields["bills"] = BillSerializer(many=True)
         return super(FormSerializer, self).to_representation(instance)
 
     def validate(self, data):
@@ -652,6 +662,7 @@ class FormSerializer(serializers.ModelSerializer):
         activities = validated_data["activities"]
         current_user = self.context["request"].user
         volunteer = Volunteer.objects.filter(user_id=current_user.id).first()
+        bills = validated_data.pop("bills", [])
 
         duration_in_minutes = activity_end_time - activity_start_time
 
@@ -670,6 +681,13 @@ class FormSerializer(serializers.ModelSerializer):
         new_form.place.set(place)
         new_form.activities.set(activities)
 
+        for bill in bills:
+            Bill.objects.create(
+                form=new_form,
+                place=bill["place"],
+                amount=bill["amount"],
+            )
+
         return new_form
 
     def get(self, pk):
@@ -686,6 +704,22 @@ class VolunteerHoursSerializer(serializers.Serializer):
     volunteer_organisation = serializers.CharField()
     volunteer_city = serializers.CharField()
     volunteer_hours = serializers.FloatField()
+
+
+class BillListSerializer(serializers.ModelSerializer):
+    form_id = serializers.IntegerField(source="form.id", read_only=True)
+    form_date = serializers.DateField(source="form.date", format="%d.%m.%Y", read_only=True)
+    volunteer_name = serializers.CharField(source="form.volunteer.user.get_full_name", read_only=True)
+    organisation_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Bill
+        fields = ("id", "place", "amount", "form_id", "form_date", "volunteer_name", "organisation_name")
+
+    def get_organisation_name(self, obj):
+        voc = obj.form.volunteer.volunteer_organisation_city_set.all()
+        first = next(iter(voc), None)
+        return first.organisation.name if first else None
 
 
 class CustomTokenRefreshSerializer(TokenRefreshSerializer):

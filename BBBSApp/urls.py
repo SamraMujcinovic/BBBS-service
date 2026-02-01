@@ -29,6 +29,7 @@ router.register(r"forms", views.FormView, basename="Form")
 router.register(r"places", views.HangOutPlaceView, basename="Hang_Out_Place")
 router.register(r"activities", views.ActivitiesView, basename="Activities")
 router.register(r"activity-categories", views.ActivityCategoryView, basename="Activity_Category")
+router.register(r"bills", views.BillListView, basename="bills")
 
 urlpatterns = [
     url(r"^", include(router.urls)),
