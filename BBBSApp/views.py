@@ -3,6 +3,7 @@ from datetime import datetime
 from io import BytesIO
 
 import openpyxl
+import strgen
 from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.utils.encoding import force_str, force_bytes
@@ -661,61 +662,35 @@ class PasswordChangeView(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
-class RequestPasswordResetView(APIView):
+class PasswordResetView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-        email = request.data.get('email')
-        if not email:
-            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.data.get("email", None) is None:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if the user with the provided email exists
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({'error': 'No user associated with this email'}, status=status.HTTP_404_NOT_FOUND)
+        user = User.objects.filter(username=request.data.get("email")).first()
+        if user is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
-        # Generate a reset token and URL-safe user ID
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        reset_link = f"{settings.CLIENT_URL}/reset-password/{uid}/{token}/"
-
-        # Send the reset email
-        send_mail(
-            'Oporavak lozinke',
-            f"Kliknite na link da unesete novu lozinku:\n{reset_link}",
-            None,
-            [user.email],
-            fail_silently=False,
+        random_password = strgen.StringGenerator("[\w\d]{10}").render()
+        user.set_password(random_password)
+        user.save()
+        email_message = (
+                "Dobrodošli u organizaciju 'Stariji brat, starija sestra'.\n\nVaša lozinka je uspješno oporavljena. U nastavku E-maila možete pronaći nove pristupne podatke.\n\nKorisničko ime: "
+                + user.username
+                + "\nLozinka: "
+                + random_password
         )
 
-        return Response({'success': 'Password reset email sent successfully'}, status=status.HTTP_200_OK)
-
-
-class PasswordResetConfirmView(APIView):
-    permission_classes = (AllowAny,)
-
-    def post(self, request):
-        uidb64 = request.data.get('uid')
-        token = request.data.get('token')
-        new_password = request.data.get('password')
-
-        # Decode the user ID from the base64 string
-        try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            return Response({'error': 'Invalid user ID'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate the token
-        if not default_token_generator.check_token(user, token):
-            return Response({'error': 'Invalid or expired token'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Set the new password
-        user.set_password(new_password)
-        user.save()
-
-        return Response({'success': 'Password has been reset successfully'}, status=status.HTTP_200_OK)
+        send_mail(
+            "Oporavak lozinke",
+            email_message,
+            None,
+            [user.email, 'samra.mujcinovic2506@gmail.com'],
+            fail_silently=False,
+        )
+        return Response(status=status.HTTP_200_OK)
 
 
 class EmailRemindersView(APIView):

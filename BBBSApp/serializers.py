@@ -1,4 +1,4 @@
-from django.conf import settings
+import strgen
 from rest_framework import serializers
 from rest_framework_bulk import BulkSerializerMixin
 from rest_framework_simplejwt.exceptions import InvalidToken
@@ -8,10 +8,7 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from django.db.transaction import atomic
 
 from .utilis import CURRENT_DATE, isUserAdmin
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
-from django.contrib.auth.tokens import default_token_generator
 
 from django.contrib.auth.models import User, Group
 from .models import (
@@ -58,32 +55,42 @@ class ChoiceField(serializers.ChoiceField):
 
 
 def saveUser(validated_data):
-    new_user = User.objects.create(
+    random_password = strgen.StringGenerator("[\w\d]{10}").render()
+
+    newUser = User.objects.create(
         first_name=validated_data["user"]["first_name"],
         last_name=validated_data["user"]["last_name"],
         email=validated_data["user"]["email"],
-        username=validated_data["user"]["email"]
+        # set email as username (can be changed later),
+        # but User model has to have username!!
+        # https://stackoverflow.com/questions/32455744/set-optional-username-django-user#:~:text=auth%20you%20can't%20make,create%20a%20username%20from%20email.
+        username=validated_data["user"]["email"],
     )
-    new_user.set_unusable_password()  # Mark the user as having no password set
-    new_user.is_active = False  # Make user inactive until they set a password
+    newUser.set_password(random_password)
 
-    new_user.save()
+    newUser.save()
 
-    # Generate an activation token
-    token = default_token_generator.make_token(new_user)
-    uid = urlsafe_base64_encode(force_bytes(new_user.pk))
+    app_link = "https://bbbs-ui.vercel.app"
 
-    # Send activation email
-    activation_link = f"{settings.CLIENT_URL}/activate/{uid}/{token}/"
+    emailMessage = (
+            "Dobrodošli u organizaciju 'Stariji brat, starija sestra'.\n\nU nastavku E-maila možete pronaći svoje pristupne podatke.\n\nKorisničko ime: "
+            + newUser.username
+            + "\nLozinka: "
+            + random_password
+            + "\n\n"
+            + "Aplikacija je dostupna na linku: "
+            + app_link
+    )
+
     send_mail(
-        'Aktivacija računa',
-        f'Klikom na link bit ćete preusmjereni na stranicu gdje možete da unesete Vašu novu lozinku: {activation_link}',
+        "Korisnički podaci",
+        emailMessage,
         None,
-        [new_user.email],
+        [newUser.email, 'samra.mujcinovic2506@gmail.com'],
         fail_silently=False,
     )
 
-    return new_user
+    return newUser
 
 
 class UserSerializer(serializers.ModelSerializer):
