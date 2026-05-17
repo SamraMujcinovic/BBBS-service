@@ -86,7 +86,7 @@ def saveUser(validated_data):
         "Korisnički podaci",
         emailMessage,
         None,
-        [newUser.email, 'samra.mujcinovic2506@gmail.com'],
+        [newUser.email, 'info@mentorstvo.ba'],
         fail_silently=False,
     )
 

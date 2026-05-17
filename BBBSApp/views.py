@@ -687,7 +687,7 @@ class PasswordResetView(APIView):
             "Oporavak lozinke",
             email_message,
             None,
-            [user.email, 'samra.mujcinovic2506@gmail.com'],
+            [user.email, 'info@mentorstvo.ba'],
             fail_silently=False,
         )
         return Response(status=status.HTTP_200_OK)
