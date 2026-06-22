@@ -319,3 +319,16 @@ class Form(models.Model):
     activities = models.ManyToManyField(Activities, blank=True)
     description = models.TextField(null=True, blank=True)
     volunteer = models.ForeignKey(Volunteer, on_delete=models.CASCADE, null=False)
+
+
+class Bill(models.Model):
+    form = models.ForeignKey(
+        'Form',
+        on_delete=models.CASCADE,
+        related_name='bills'
+    )
+    place = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.place} - {self.amount} KM"

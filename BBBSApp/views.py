@@ -55,7 +55,7 @@ from .serializers import (
     HangOutPlaceSerializer,
     ActivitiesSerializer,
     ActivityCategorySerializer,
-    CustomTokenRefreshSerializer
+    CustomTokenRefreshSerializer, BillListSerializer
 )
 from django.db.models import Sum, F
 from .models import (
@@ -73,7 +73,7 @@ from .models import (
     Activities,
     Activity_Category,
     Volunteer_Organisation_City,
-    Child_Organisation_City
+    Child_Organisation_City, Bill
 )
 from django.contrib.auth.models import User
 
@@ -452,18 +452,18 @@ class FormView(viewsets.ModelViewSet):
 
 def get_accessible_forms(current_user):
     if isUserAdmin(current_user):
-        return Form.objects.all().order_by("-date", 'volunteer__volunteer_organisation', 'volunteer__volunteer_city')
+        return Form.objects.all().prefetch_related('bills').order_by("-date", 'volunteer__volunteer_organisation', 'volunteer__volunteer_city')
     if isUserCoordinator(current_user):
         # allow coordinators to see forms of his volunteer
         coordinator = Coordinator.objects.get(user_id=current_user.id)
         return Form.objects.filter(
             volunteer__volunteer_organisation__in=coordinator.coordinator_organisation.all(),
             volunteer__volunteer_city__in=coordinator.coordinator_city.all()
-        ).order_by("-date")
+        ).prefetch_related('bills').order_by("-date")
     if isUserVolunteer(current_user):
         # allow volunteers to see his forms
         volunteer = Volunteer.objects.get(user_id=current_user.id)
-        return Form.objects.filter(volunteer=volunteer.id).order_by("-date")
+        return Form.objects.filter(volunteer=volunteer.id).prefetch_related('bills').order_by("-date")
     return None
 
 
@@ -1036,3 +1036,67 @@ def getChildsExcelFileName(filters):
         filename = filename + f"_{organisation}"
 
     return replace_special_characters(filename) + ".xlsx"
+
+
+class BillListView(viewsets.ModelViewSet):
+    """
+    Pregled svih računa, sa filterom po datumu forme i po volonteru.
+    """
+    serializer_class = BillListSerializer
+    authentication_classes = [JWTAuthentication]
+    pagination_class = CustomPagination
+
+    def get_permissions(self):
+        if self.action == "list" or self.action == "destroy":
+            return [IsAdmin()]
+
+        return super().get_permissions()
+
+    def get_queryset(self):
+        qs = Bill.objects.all()
+
+        # LIST ONLY filter (ne dira DELETE / RETRIEVE)
+        if self.action == "list":
+            start_date = self.request.GET.get("startDate")
+            end_date = self.request.GET.get("endDate")
+
+            # Obavezna oba datuma samo za list
+            if not start_date or not end_date:
+                return Bill.objects.none()
+
+            qs = qs.filter(
+                form__date__gte=start_date,
+                form__date__lte=end_date
+            )
+
+            # Opcioni filter po volonteru
+            volunteer_id = self.request.GET.get("volunteerFilter")
+            if volunteer_id:
+                qs = qs.filter(form__volunteer__id=volunteer_id)
+
+            organization_id = self.request.GET.get("organisationFilter")
+            if organization_id:
+                qs = qs.filter(form__volunteer__volunteer_organisation__id=organization_id)
+
+            qs = qs.select_related(
+                "form",
+                "form__volunteer",
+            ).prefetch_related(
+                "form__volunteer__volunteer_organisation",
+            ).order_by("form__date")
+
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # ukupna suma svih stavki (bez paginacije)
+        total_amount = queryset.aggregate(total=Sum("amount"))["total"] or 0
+
+        page = self.paginate_queryset(queryset)
+        serializer = self.get_serializer(page, many=True)
+
+        return self.get_paginated_response({
+            "results": serializer.data,
+            "total_amount": total_amount
+        })
