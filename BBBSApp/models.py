@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 from BBBSApp.utilis import PHONE_REGEX
+from BBBSApp.validators import validate_reflection
 
 
 class City(models.Model):
@@ -100,6 +101,11 @@ class Volunteer(models.Model):
     good_conduct_certificate = models.BooleanField()
     status = models.BooleanField()
     registration_date = models.DateField(default='django.utils.timezone.now', blank=True)
+    reflection = models.TextField(
+        null=True,
+        blank=True,
+        validators=[validate_reflection]
+    )
     coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.CASCADE)
     volunteer_organisation = models.ManyToManyField(
         "Organisation",
@@ -198,6 +204,11 @@ class Child(models.Model):
     passive_pup = models.TextField(null=True, blank=True)
     child_potential = models.TextField(null=True, blank=True)
     something_else = models.TextField(null=True, blank=True)
+    reflection = models.TextField(
+        null=True,
+        blank=True,
+        validators=[validate_reflection]
+    )
     coordinator = models.ForeignKey(Coordinator, null=True, on_delete=models.CASCADE)
     volunteer = models.OneToOneField(
         Volunteer, on_delete=models.CASCADE, null=True, blank=True  # check what to do on delete

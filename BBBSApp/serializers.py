@@ -140,6 +140,8 @@ class CoordinatorSerializer(BulkSerializerMixin, serializers.ModelSerializer):
     def validate(self, data):
         validateField(data, "coordinator_organisation")
         validateField(data, "coordinator_city")
+        if data["reflection"] and len(data["reflection"].split()) > 100:
+            raise serializers.ValidationError("Maksimalno 100 riječi.")
 
         return data
 
@@ -213,6 +215,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
             "good_conduct_certificate",
             "status",
             "registration_date",
+            "reflection",
             "coordinator",
             "volunteer_organisation",
             "volunteer_city",
@@ -244,6 +247,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
         employment_status = validated_data["employment_status"]
         good_conduct_certificate = validated_data["good_conduct_certificate"]
         status = validated_data["status"]
+        reflection = validated_data["reflection"]
 
         new_volunteer = Volunteer.objects.create(
             user=new_user,
@@ -256,7 +260,8 @@ class VolunteerSerializer(serializers.ModelSerializer):
             employment_status=employment_status,
             good_conduct_certificate=good_conduct_certificate,
             status=status,
-            registration_date=CURRENT_DATE
+            registration_date=CURRENT_DATE,
+            reflection=reflection
         )
         new_volunteer.save()
 
@@ -297,6 +302,7 @@ class VolunteerSerializer(serializers.ModelSerializer):
         instance.employment_status = validated_data["employment_status"]
         instance.good_conduct_certificate = validated_data["good_conduct_certificate"]
         instance.status = validated_data["status"]
+        instance.reflection = validated_data["reflection"]
 
         current_user = self.context["request"].user
         if isUserAdmin(current_user):
@@ -384,6 +390,7 @@ class ChildSerializer(serializers.ModelSerializer):
             "volunteer",
             "child_organisation",
             "child_city",
+            "reflection"
         )
         extra_kwargs = {
             "first_name": {"write_only": True},
@@ -404,6 +411,9 @@ class ChildSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"mentoring_reason": "To many options selected"}
             )
+
+        if data["reflection"] and len(data["reflection"].split()) > 100:
+            raise serializers.ValidationError("Maksimalno 100 riječi.")
 
         return data
 
@@ -427,6 +437,7 @@ class ChildSerializer(serializers.ModelSerializer):
         child_potential = validated_data["child_potential"]
         something_else = validated_data["something_else"]
         volunteer = validated_data.get("volunteer", None)
+        reflection = validated_data.get("reflection", None)
         new_child = Child.objects.create(
             first_name=first_name,
             last_name=last_name,
@@ -444,6 +455,7 @@ class ChildSerializer(serializers.ModelSerializer):
             child_potential=child_potential,
             something_else=something_else,
             volunteer=volunteer,
+            reflection=reflection
         )
         new_child.save()
 
@@ -494,6 +506,7 @@ class ChildSerializer(serializers.ModelSerializer):
         instance.passive_pup = validated_data["passive_pup"]
         instance.child_potential = validated_data["child_potential"]
         instance.something_else = validated_data["something_else"]
+        instance.reflection = validated_data["reflection"]
 
         # set coordinator
         current_user = self.context["request"].user
