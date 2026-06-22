@@ -1047,33 +1047,45 @@ class BillListView(viewsets.ModelViewSet):
     pagination_class = CustomPagination
 
     def get_permissions(self):
-        if self.action == "list":
+        if self.action == "list" or self.action == "destroy":
             return [IsAdmin()]
+
         return super().get_permissions()
 
     def get_queryset(self):
-        start_date = self.request.GET.get("startDate")
-        end_date = self.request.GET.get("endDate")
+        qs = Bill.objects.all()
 
-        # Obavezna oba datuma
-        if not start_date or not end_date:
-            return Bill.objects.none()
+        # LIST ONLY filter (ne dira DELETE / RETRIEVE)
+        if self.action == "list":
+            start_date = self.request.GET.get("startDate")
+            end_date = self.request.GET.get("endDate")
 
-        qs = Bill.objects.filter(
-            form__date__gte=start_date,
-            form__date__lte=end_date
-        ).select_related("form", "form__volunteer",).prefetch_related("form__volunteer__volunteer_organisation",)
+            # Obavezna oba datuma samo za list
+            if not start_date or not end_date:
+                return Bill.objects.none()
 
-        # Opcioni filter po volonteru
-        volunteer_id = self.request.GET.get("volunteerFilter")
-        if volunteer_id:
-            qs = qs.filter(form__volunteer__id=volunteer_id)
+            qs = qs.filter(
+                form__date__gte=start_date,
+                form__date__lte=end_date
+            )
 
-        organization_id = self.request.GET.get("organisationFilter")
-        if organization_id:
-            qs = qs.filter(form__volunteer__volunteer_organisation__id=organization_id)
+            # Opcioni filter po volonteru
+            volunteer_id = self.request.GET.get("volunteerFilter")
+            if volunteer_id:
+                qs = qs.filter(form__volunteer__id=volunteer_id)
 
-        return qs.order_by("form__date")
+            organization_id = self.request.GET.get("organisationFilter")
+            if organization_id:
+                qs = qs.filter(form__volunteer__volunteer_organisation__id=organization_id)
+
+            qs = qs.select_related(
+                "form",
+                "form__volunteer",
+            ).prefetch_related(
+                "form__volunteer__volunteer_organisation",
+            ).order_by("form__date")
+
+        return qs
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
